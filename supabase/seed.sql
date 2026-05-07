@@ -1,0 +1,1 @@
+-- Dados iniciais opcionais após migrações (supabase db reset)
