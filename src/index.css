@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Core colors - soft spiritual palette */
+    --background: 240 20% 99%;
+    --foreground: 240 15% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 15% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 15% 15%;
+
+    /* Primary - deep spiritual blue */
+    --primary: 240 60% 55%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 240 65% 50%;
+
+    /* Secondary - soft lavender */
+    --secondary: 250 45% 95%;
+    --secondary-foreground: 240 15% 20%;
+
+    /* Muted - gentle gray */
+    --muted: 240 15% 96%;
+    --muted-foreground: 240 10% 45%;
+
+    /* Accent - warm purple */
+    --accent: 260 50% 92%;
+    --accent-foreground: 260 60% 30%;
+
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 15% 90%;
+    --input: 240 15% 90%;
+    --ring: 240 60% 55%;
+
+    --radius: 1rem;
+    
+    /* Progress colors */
+    --progress-bg: 240 20% 93%;
+    --progress-fill: 240 60% 55%;
+    
+    /* Card shadows */
+    --shadow-sm: 0 2px 8px rgba(99, 102, 241, 0.08);
+    --shadow-md: 0 4px 20px rgba(99, 102, 241, 0.12);
+    --shadow-lg: 0 8px 32px rgba(99, 102, 241, 0.15);
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 240 20% 8%;
+    --foreground: 240 10% 95%;
+
+    --card: 240 15% 12%;
+    --card-foreground: 240 10% 95%;
+
+    --popover: 240 15% 12%;
+    --popover-foreground: 240 10% 95%;
+
+    --primary: 240 60% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 240 65% 55%;
+
+    --secondary: 240 15% 18%;
+    --secondary-foreground: 240 10% 95%;
+
+    --muted: 240 15% 15%;
+    --muted-foreground: 240 10% 60%;
+
+    --accent: 260 40% 20%;
+    --accent-foreground: 260 50% 90%;
+
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 15% 20%;
+    --input: 240 15% 20%;
+    --ring: 240 60% 60%;
+    
+    --progress-bg: 240 20% 15%;
+    --progress-fill: 240 60% 60%;
+    
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  
+  /* Reading optimized typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+  
+  h1 {
+    @apply text-3xl md:text-4xl lg:text-5xl;
+  }
+  
+  h2 {
+    @apply text-2xl md:text-3xl;
+  }
+  
+  h3 {
+    @apply text-xl md:text-2xl;
+  }
+  
+  /* Reading content */
+  .reading-text {
+    @apply text-lg md:text-xl leading-relaxed tracking-wide;
+  }
+}

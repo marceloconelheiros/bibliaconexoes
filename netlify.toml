@@ -1,7 +1,3 @@
-# Deploy: conecte o repo em Netlify → Builds automáticos no push.
-# Variáveis (Site settings → Environment variables), espelhe o .env local:
-#   VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, VITE_SUPABASE_PROJECT_ID
-
 [build]
   publish = "dist"
   command = "npm run build"

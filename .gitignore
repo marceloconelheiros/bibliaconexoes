@@ -12,11 +12,6 @@ dist
 dist-ssr
 *.local
 
-# Ambiente (credenciais Supabase / Netlify — nunca commitar)
-.env
-.env.*
-!.env.example
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
