@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Slider } from "@/components/ui/slider";
 import { ArrowLeft, Volume2, Play, Pause } from "lucide-react";
 import { toast } from "sonner";
-import { getAudioPlaybackUrl } from "@/lib/audio-playback-url";
+import { getAudioPlaybackUrl, getAudiosObjectPath } from "@/lib/audio-playback-url";
 
 interface ChapterTimestamp {
   chapter: number;
@@ -109,9 +109,10 @@ const Audios = () => {
     return saved ? parseFloat(saved) : 0;
   };
 
-  const playAudio = (track: AudioTrack) => {
+  const playAudio = async (track: AudioTrack) => {
     const book = books.get(track.book_id);
     const src = getAudioPlaybackUrl(track, book);
+    const objectPath = getAudiosObjectPath(track, book);
 
     if (!src) {
       toast.error(
@@ -138,17 +139,30 @@ const Audios = () => {
       setAudioElement(null);
     }
 
-    // Create and play new audio
+    const fileHint = objectPath ? `"${objectPath}" na raiz do bucket audios` : "o arquivo esperado na raiz do bucket audios";
+
     try {
+      try {
+        const probe = await fetch(src, { method: "HEAD", mode: "cors" });
+        if (!probe.ok && probe.status !== 405) {
+          toast.error(
+            `HTTP ${probe.status} ao buscar o áudio. Envie ${fileHint} (Storage → bucket público **audios**) ou use audio_url nesta faixa.`,
+          );
+          return;
+        }
+      } catch {
+        /* HEAD pode falhar por rede/CORS; o elemento <audio> tentará mesmo assim */
+      }
+
       const audio = new Audio(src);
-      audio.crossOrigin = "anonymous";
 
       audio.onerror = () => {
         const code = audio.error?.code;
+        const fileMsg = objectPath ? `Esperado: ${objectPath} no bucket audios.` : "";
         const hints: Record<number, string> = {
           2: "Erro de rede ou CORS.",
-          3: "Erro ao decodificar o arquivo.",
-          4: "URL inválida ou arquivo não encontrado (confira o nome no bucket audios: {abbrev}.mp3).",
+          3: "O servidor não devolveu um áudio válido (corpo pode ser JSON de erro).",
+          4: `Resposta não é MP3 ou arquivo ausente. ${fileMsg}`,
         };
         const hint = code != null ? hints[code] ?? "" : "";
         console.error("[Áudio]", track.title, src, audio.error);
@@ -182,8 +196,8 @@ const Audios = () => {
       setAudioElement(audio);
       setCurrentPlaying(track.id);
 
-      audio.play().catch(error => {
-        if (error.name !== 'AbortError') {
+      audio.play().catch((error: Error) => {
+        if (error.name !== "AbortError") {
           console.error("Erro ao reproduzir áudio:", error);
           toast.error(`Erro ao reproduzir ${track.title}`);
           setCurrentPlaying(null);

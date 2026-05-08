@@ -1,28 +1,28 @@
 /**
- * Resolve a URL final para reprodução.
+ * Resolve URL de reprodução dos áudios.
  *
- * 1) `audio_tracks.audio_url` quando preenchido no Supabase.
- * 2) `VITE_PUBLIC_AUDIO_BASE_URL` + `{abbrev}.mp3` ou `{abbrev}_{PS1…}.mp3` (Salmos).
- * 3) Automático: `{VITE_SUPABASE_URL}/storage/v1/object/public/audios/` + mesmo padrão de arquivo,
- *    para não precisar da variável extra se os MP3 já estão no bucket público `audios`.
+ * 1) `audio_tracks.audio_url` quando preenchido.
+ * 2) Caso contrário: objeto na raiz do bucket Storage **audios**, nome
+ *    `{abbrev}.mp3` ou `{abbrev}_{PS1…}.mp3` (Salmos). Usa `getPublicUrl` do SDK.
  */
+import { supabase } from "@/integrations/supabase/client";
+
 export type BookForAudio = {
   abbrev: string;
 };
 
-function trimSlash(s: string): string {
-  return s.replace(/\/+$/, "");
-}
-
-/** Base do bucket público `audios` (sem barra no final). */
-export function getPublicAudiosBucketBase(): string | null {
-  const explicit = (import.meta.env.VITE_PUBLIC_AUDIO_BASE_URL ?? "").trim().replace(/\/$/, "");
-  if (explicit) return explicit;
-
-  const projectUrl = (import.meta.env.VITE_SUPABASE_URL ?? "").trim().replace(/^["']|["']$/g, "").replace(/\/$/, "");
-  if (!projectUrl) return null;
-
-  return `${trimSlash(projectUrl)}/storage/v1/object/public/audios`;
+/** Caminho do objeto dentro do bucket `audios` (ex.: `Gn.mp3`, `Sl_PS1.mp3`). */
+export function getAudiosObjectPath(
+  track: { psalms_group: string | null },
+  book?: BookForAudio,
+): string | null {
+  if (!book?.abbrev?.trim()) return null;
+  const abbrev = book.abbrev.trim();
+  const group = track.psalms_group;
+  if (group && group !== "NONE") {
+    return `${abbrev}_${group}.mp3`;
+  }
+  return `${abbrev}.mp3`;
 }
 
 export function getAudioPlaybackUrl(
@@ -32,14 +32,14 @@ export function getAudioPlaybackUrl(
   const direct = track.audio_url?.trim();
   if (direct) return direct;
 
-  const base = getPublicAudiosBucketBase();
-  if (!base || !book?.abbrev?.trim()) return null;
+  const path = getAudiosObjectPath(track, book);
+  if (!path) return null;
 
-  const abbrev = book.abbrev.trim();
-  const group = track.psalms_group;
-
-  if (group && group !== "NONE") {
-    return `${base}/${encodeURIComponent(abbrev)}_${group}.mp3`;
+  const explicit = (import.meta.env.VITE_PUBLIC_AUDIO_BASE_URL ?? "").trim().replace(/\/$/, "");
+  if (explicit) {
+    return `${explicit}/${encodeURIComponent(path)}`;
   }
-  return `${base}/${encodeURIComponent(abbrev)}.mp3`;
+
+  const { data } = supabase.storage.from("audios").getPublicUrl(path);
+  return data.publicUrl;
 }
