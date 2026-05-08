@@ -212,7 +212,7 @@ const BibliaOnline = () => {
               </CardHeader>
               <CardContent className="pt-4 pb-6">
                 <ScrollArea className="h-[min(62vh,520px)] md:h-[min(68vh,600px)]">
-                  <div className="space-y-5 pr-4 pb-4">
+                  <div className="space-y-5 pr-2 pb-4">
                     {selectedBook.chapters[selectedChapter].map((verse, index) => (
                       <p key={index} className="reading-text text-foreground/95 leading-[1.75]">
                         <sup className="text-primary font-semibold mr-2 select-none text-base">{index + 1}</sup>

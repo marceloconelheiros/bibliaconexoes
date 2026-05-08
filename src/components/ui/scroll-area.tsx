@@ -25,14 +25,23 @@ const ScrollBar = React.forwardRef<
     ref={ref}
     orientation={orientation}
     className={cn(
-      "flex touch-none select-none transition-colors",
-      orientation === "vertical" && "h-full w-2.5 border-l border-l-transparent p-[1px]",
-      orientation === "horizontal" && "h-2.5 flex-col border-t border-t-transparent p-[1px]",
+      "group flex touch-none select-none transition-opacity duration-200 data-[state=hidden]:opacity-0",
+      orientation === "vertical" &&
+        "h-full w-[13px] justify-center rounded-[var(--radius)] border border-border/30 bg-muted/40 py-2 shadow-[inset_0_1px_0_hsl(0_0%_100%/0.06)] px-0.5 dark:border-border/40 dark:bg-muted/25 dark:shadow-none sm:w-[14px]",
+      orientation === "horizontal" &&
+        "h-[13px] w-full flex-col rounded-[var(--radius)] border border-border/30 bg-muted/40 px-2 shadow-[inset_0_1px_0_hsl(0_0%_100%/0.06)] py-0.5 dark:border-border/40 dark:bg-muted/25 dark:shadow-none sm:h-[14px]",
       className,
     )}
     {...props}
   >
-    <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-border" />
+    <ScrollAreaPrimitive.ScrollAreaThumb
+      className={cn(
+        "relative flex-1 rounded-lg border border-background/80 bg-clip-padding transition-colors",
+        "min-h-[2.25rem] bg-primary/42 shadow-[inset_0_1px_0_hsl(0_0%_100%/0.22)]",
+        "group-hover:bg-primary/52 group-active:bg-primary/58",
+        "dark:border-background/25 dark:bg-primary/30 dark:shadow-[inset_0_1px_0_hsl(0_0%_100%/0.08)] dark:group-hover:bg-primary/42 dark:group-active:bg-primary/48",
+      )}
+    />
   </ScrollAreaPrimitive.ScrollAreaScrollbar>
 ));
 ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName;

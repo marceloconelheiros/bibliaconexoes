@@ -35,8 +35,13 @@
     --input: 215 14% 88%;
     --ring: 221 83% 48%;
 
-    /* ~3px — cantos quase retos em inputs, botões e cartões */
-    --radius: 3px;
+    /* ~5px — cantos discretos e consistentes */
+    --radius: 5px;
+
+    /* Scrollbar (Firefox / tokens para uso futuro) */
+    --scroll-thumb: 221 83% 48%;
+    --scroll-thumb-hover: 221 83% 40%;
+    --scroll-track: 215 14% 90%;
 
     --progress-bg: 215 16% 90%;
     --progress-fill: 221 83% 48%;
@@ -100,6 +105,10 @@
     --sidebar-accent-foreground: 210 20% 94%;
     --sidebar-border: 222 18% 18%;
     --sidebar-ring: 217 91% 60%;
+
+    --scroll-thumb: 217 91% 58%;
+    --scroll-thumb-hover: 217 91% 68%;
+    --scroll-track: 222 18% 16%;
   }
 }
 
@@ -135,5 +144,64 @@
 
   .reading-text {
     @apply text-lg md:text-xl leading-relaxed tracking-wide;
+  }
+}
+
+/* Scrollbars nativos — um só padrão (cores do tema + cantos --radius) */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--scroll-thumb) / 0.38) hsl(var(--scroll-track) / 0.6);
+  }
+
+  @supports selector(::-webkit-scrollbar) {
+    *::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    *::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+
+    *::-webkit-scrollbar-track {
+      margin: 4px 0;
+      background: hsl(var(--scroll-track) / 0.5);
+      border-radius: var(--radius);
+      border: 1px solid hsl(var(--border) / 0.45);
+    }
+
+    *::-webkit-scrollbar-thumb {
+      border-radius: var(--radius);
+      border: 2px solid hsl(var(--background));
+      background: hsl(var(--scroll-thumb) / 0.45);
+      background-clip: padding-box;
+      box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.18);
+    }
+
+    .dark *::-webkit-scrollbar-thumb {
+      box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.06);
+    }
+
+    *::-webkit-scrollbar-thumb:hover {
+      background: hsl(var(--scroll-thumb-hover) / 0.58);
+      background-clip: padding-box;
+    }
+  }
+}
+
+@layer utilities {
+  /* Áreas roláveis — mesmo comportamento em todas as telas */
+  .bc-scroll {
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .bc-scroll-y {
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
 }

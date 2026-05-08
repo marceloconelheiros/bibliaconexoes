@@ -20,7 +20,7 @@ const EstudosEmpresarios = () => {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-primary/15 flex items-center justify-center">
+              <div className="w-11 h-11 rounded-lg bg-primary/15 flex items-center justify-center">
                 <BriefcaseBusiness className="w-6 h-6 text-primary" />
               </div>
               <div>
@@ -39,7 +39,7 @@ const EstudosEmpresarios = () => {
           capítulo na Bíblia online para ler o trecho completo e a reflexão no topo da página.
         </p>
 
-        <ScrollArea className="h-[min(72vh,640px)] pr-3">
+        <ScrollArea className="h-[min(72vh,640px)] pr-1">
           <div className="space-y-4 pb-8">
             {EXECUTIVE_STUDIES.map((study) => (
               <Card key={study.id} className="border-border/80 bg-card/90 hover:border-primary/40 transition-colors">

@@ -198,7 +198,7 @@ const Login = () => {
             <img
               src="/logo.png"
               alt={BRAND.name}
-              className="w-14 h-14 rounded-[3px] shadow-md ring-2 ring-primary/15 shrink-0"
+              className="w-14 h-14 rounded-lg shadow-md ring-2 ring-primary/15 shrink-0"
             />
             <div className="text-center sm:text-left">
               <CardTitle className="font-display text-3xl font-bold tracking-tight text-foreground">
@@ -215,8 +215,7 @@ const Login = () => {
           {isRegister ? (
             <form onSubmit={handleRegister} className="space-y-4 min-w-0 max-w-full box-border">
               <div
-                className="max-h-[min(68vh,540px)] overflow-y-auto overflow-x-hidden min-w-0 w-full max-w-full [-webkit-overflow-scrolling:touch] overscroll-y-contain pr-1 sm:pr-0"
-                style={{ scrollbarGutter: "stable" }}
+                className="bc-scroll-y max-h-[min(68vh,540px)] min-w-0 w-full max-w-full pr-0.5 sm:pr-0"
               >
                 <div className="space-y-4 pb-2 min-w-0 max-w-full">
                   <div className="space-y-2 min-w-0 max-w-full">
@@ -317,7 +316,7 @@ const Login = () => {
                   <div className="space-y-2 min-w-0 max-w-full">
                     <Label>Foto de perfil (opcional)</Label>
                     <div className="flex flex-wrap items-center gap-3 min-w-0 max-w-full">
-                      <div className="relative h-20 w-20 rounded-[3px] overflow-hidden border-2 border-dashed border-border bg-muted flex items-center justify-center shrink-0">
+                      <div className="relative h-20 w-20 rounded-lg overflow-hidden border-2 border-dashed border-border bg-muted flex items-center justify-center shrink-0">
                         {photoPreview ? (
                           <img src={photoPreview} alt="" className="h-full w-full object-cover" />
                         ) : (

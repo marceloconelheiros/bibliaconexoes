@@ -293,7 +293,7 @@ const Audios = () => {
                       {track.chapter_timestamps && track.chapter_timestamps.length > 0 && (
                         <div className="border-t pt-3">
                           <p className="text-sm font-medium mb-2">Capítulos:</p>
-                          <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 max-h-32 overflow-y-auto">
+                          <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 max-h-32 bc-scroll-y">
                             {track.chapter_timestamps.map((chapter) => (
                               <Button
                                 key={chapter.chapter}
