@@ -9,21 +9,28 @@ import { ArrowLeft, Volume2, Play, Pause } from "lucide-react";
 import { toast } from "sonner";
 import { getAudioPlaybackUrl, getAudiosObjectPath } from "@/lib/audio-playback-url";
 
-async function supabaseStorageErrorMessage(url: string): Promise<string | undefined> {
+async function messageFromStorageErrorResponse(res: Response): Promise<string | undefined> {
   try {
-    const r = await fetch(url, {
-      method: "GET",
-      mode: "cors",
-      headers: { Range: "bytes=0-8191" },
-    });
-    if (r.status === 206 || (r.ok && r.status === 200)) return undefined;
-    const text = await r.text();
+    const text = await res.text();
     if (!text.trimStart().startsWith("{")) return undefined;
     const j = JSON.parse(text) as { message?: string; error?: string };
     return j.message ?? j.error;
   } catch {
     return undefined;
   }
+}
+
+function audioStorageFailureToast(
+  status: number,
+  apiMsg: string | undefined,
+  objectPath: string | null,
+): string {
+  const head = `HTTP ${status} ao buscar o áudio.${apiMsg ? ` ${apiMsg}.` : ""}`;
+  const nome = objectPath ? `"${objectPath}"` : '"Gn.mp3" (exemplo)';
+  if (/not\s*found|nosuchkey|object\s+not\s+found/i.test(apiMsg ?? "")) {
+    return `${head} O ficheiro não está no Storage deste projeto. No Supabase: Storage → bucket audios → enviar ${nome} na raiz (sem pasta). Respeita maiúsculas. Ou define audio_url na faixa com um link direto ao MP3.`;
+  }
+  return `${head} Envie ${nome} na raiz do bucket audios (público) ou preencha audio_url nesta faixa.`;
 }
 
 interface ChapterTimestamp {
@@ -156,8 +163,6 @@ const Audios = () => {
       setAudioElement(null);
     }
 
-    const fileHint = objectPath ? `"${objectPath}" na raiz do bucket audios` : "o arquivo esperado na raiz do bucket audios";
-
     try {
       try {
         // HEAD devolve 400 em muitos projetos Storage público; GET com Range mínimo é fiável.
@@ -169,10 +174,8 @@ const Audios = () => {
         const probeOk =
           probe.ok || probe.status === 206 || probe.status === 416;
         if (!probeOk) {
-          const apiMsg = await supabaseStorageErrorMessage(src);
-          toast.error(
-            `HTTP ${probe.status} ao buscar o áudio.${apiMsg ? ` ${apiMsg}` : ""} Envie ${fileHint} (bucket **audios** na raiz, público) ou preencha **audio_url**.`,
-          );
+          const apiMsg = await messageFromStorageErrorResponse(probe);
+          toast.error(audioStorageFailureToast(probe.status, apiMsg, objectPath));
           return;
         }
       } catch {
