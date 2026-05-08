@@ -224,6 +224,48 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          birth_date: string | null
+          cidade: string
+          created_at: string
+          email: string | null
+          faith_detail: string | null
+          faith_tradition: string
+          id: string
+          nome: string
+          updated_at: string
+          whatsapp: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          birth_date?: string | null
+          cidade?: string
+          created_at?: string
+          email?: string | null
+          faith_detail?: string | null
+          faith_tradition?: string
+          id: string
+          nome?: string
+          updated_at?: string
+          whatsapp?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          birth_date?: string | null
+          cidade?: string
+          created_at?: string
+          email?: string | null
+          faith_detail?: string | null
+          faith_tradition?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       progress: {
         Row: {
           chapter_id: string

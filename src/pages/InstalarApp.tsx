@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, ArrowLeft, Smartphone, Share, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { BRAND } from "@/lib/brand";
 
 const InstalarApp = () => {
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ const InstalarApp = () => {
     if (outcome === 'accepted') {
       toast({
         title: "App instalado!",
-        description: "O BíbliaFlow foi adicionado à sua tela inicial.",
+        description: `O ${BRAND.name} foi adicionado à sua tela inicial.`,
       });
       setDeferredPrompt(null);
     }
@@ -67,7 +68,7 @@ const InstalarApp = () => {
               App já instalado!
             </CardTitle>
             <CardDescription>
-              O BíbliaFlow já está instalado no seu dispositivo.
+              O {BRAND.name} já está instalado no seu dispositivo.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -98,7 +99,7 @@ const InstalarApp = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Download className="h-6 w-6" />
-                Instalar BíbliaFlow
+                Instalar {BRAND.name}
               </CardTitle>
               <CardDescription>
                 Instale o app na sua tela inicial para acesso rápido
@@ -179,7 +180,7 @@ const InstalarApp = () => {
 
                     <div className="pt-4 border-t">
                       <p className="text-sm text-muted-foreground">
-                        ✨ Pronto! O ícone do BíbliaFlow aparecerá na sua tela inicial como um app nativo.
+                        ✨ Pronto! O ícone do {BRAND.name} aparecerá na sua tela inicial como um app nativo.
                       </p>
                     </div>
                   </CardContent>
@@ -235,7 +236,7 @@ const InstalarApp = () => {
 
                     <div className="pt-4 border-t">
                       <p className="text-sm text-muted-foreground">
-                        ✨ Pronto! O ícone do BíbliaFlow aparecerá na sua tela inicial.
+                        ✨ Pronto! O ícone do {BRAND.name} aparecerá na sua tela inicial.
                       </p>
                     </div>
                   </CardContent>

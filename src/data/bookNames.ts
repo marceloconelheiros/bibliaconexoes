@@ -1,7 +1,7 @@
 export const bookNames: Record<string, string> = {
   // Antigo Testamento
   "Gn": "Gênesis",
-  "Ex": "Êxodo",
+  "Êx": "Êxodo",
   "Lv": "Levítico",
   "Nm": "Números",
   "Dt": "Deuteronômio",

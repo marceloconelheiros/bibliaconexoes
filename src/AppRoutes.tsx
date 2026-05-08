@@ -6,6 +6,7 @@ import MeusPlanos from "./pages/MeusPlanos";
 import PlanoDetalhes from "./pages/PlanoDetalhes";
 import Audios from "./pages/Audios";
 import BibliaOnline from "./pages/BibliaOnline";
+import EstudosEmpresarios from "./pages/EstudosEmpresarios";
 import InstalarApp from "./pages/InstalarApp";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
@@ -34,6 +35,7 @@ const AppRoutes = () => {
         <Route path="/plano/:id" element={<PlanoDetalhes />} />
         <Route path="/audios" element={<Audios />} />
         <Route path="/biblia" element={<BibliaOnline />} />
+        <Route path="/estudos-empresarios" element={<EstudosEmpresarios />} />
         <Route path="/instalar" element={<InstalarApp />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

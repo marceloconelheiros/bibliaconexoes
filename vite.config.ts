@@ -18,10 +18,11 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt'],
       manifest: {
-        name: 'BíbliaFlow - Seu Plano de Leitura da Bíblia',
-        short_name: 'BíbliaFlow',
-        description: 'Aplicativo completo para criar planos personalizados de leitura bíblica',
-        theme_color: '#6366f1',
+        name: 'Bíblia Conexões — leitura e planos bíblicos',
+        short_name: 'Conexões',
+        description:
+          'Planos de leitura, Bíblia online e áudio para sua jornada espiritual.',
+        theme_color: '#227a68',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
