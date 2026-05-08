@@ -29,6 +29,9 @@ function audioStorageFailureToast(
   const bucket = getAudiosBucketId();
   const head = `HTTP ${status} ao buscar o áudio.${apiMsg ? ` ${apiMsg}.` : ""}`;
   const nome = objectPath ? `"${objectPath}"` : '"Gn.mp3" (exemplo)';
+  if (status === 401 || /no api key/i.test(apiMsg ?? "")) {
+    return `${head} Verifica se o URL usa /storage/v1/object/… e não /rest/v1/object/… (este último exige chave). Na Vercel, confere VITE_PUBLIC_AUDIO_BASE_URL e na tabela audio_url.`;
+  }
   if (/not\s*found|nosuchkey|object\s+not\s+found/i.test(apiMsg ?? "")) {
     return `${head} O ficheiro não está no Storage deste projeto (bucket «${bucket}» está vazio ou o nome não coincide). Envie ${nome} na raiz, sem pasta — ou define audio_url no registo da faixa.`;
   }

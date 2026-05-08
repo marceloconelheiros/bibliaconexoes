@@ -54,22 +54,28 @@ export function getAudiosObjectPath(
   return `${slug}.mp3`;
 }
 
+/** Storage público: `/storage/v1/object/...`. `/rest/v1/object/...` é erro comum e devolve 401 «No API key». */
+export function fixSupabaseStoragePublicUrl(url: string): string {
+  return url.trim().replace(/\/rest\/v1\/object\//gi, "/storage/v1/object/");
+}
+
 export function getAudioPlaybackUrl(
   track: { audio_url: string | null; psalms_group: string | null },
   book?: BookForAudio,
 ): string | null {
   const direct = track.audio_url?.trim();
-  if (direct) return direct;
+  if (direct) return fixSupabaseStoragePublicUrl(direct);
 
   const path = getAudiosObjectPath(track, book);
   if (!path) return null;
 
-  const explicit = (import.meta.env.VITE_PUBLIC_AUDIO_BASE_URL ?? "").trim().replace(/\/$/, "");
-  if (explicit) {
-    return `${explicit}/${encodeURIComponent(path)}`;
+  const explicitRaw = (import.meta.env.VITE_PUBLIC_AUDIO_BASE_URL ?? "").trim().replace(/\/$/, "");
+  if (explicitRaw) {
+    const explicit = fixSupabaseStoragePublicUrl(explicitRaw);
+    return fixSupabaseStoragePublicUrl(`${explicit}/${encodeURIComponent(path)}`);
   }
 
   const bucket = getAudiosBucketId();
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
+  return fixSupabaseStoragePublicUrl(data.publicUrl);
 }
