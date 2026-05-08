@@ -8,6 +8,7 @@
  *    e coincidir com ficheiros típicos em ASCII. Usa `getPublicUrl` do SDK.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { getAudiosBucketId } from "@/lib/supabase-env";
 
 export type BookForAudio = {
   abbrev: string;
@@ -68,6 +69,7 @@ export function getAudioPlaybackUrl(
     return `${explicit}/${encodeURIComponent(path)}`;
   }
 
-  const { data } = supabase.storage.from("audios").getPublicUrl(path);
+  const bucket = getAudiosBucketId();
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
 }

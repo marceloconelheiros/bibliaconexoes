@@ -19,3 +19,9 @@ export function readSupabaseEnv(): { url: string; key: string } | null {
 export function isSupabaseEnvReady(): boolean {
   return readSupabaseEnv() !== null;
 }
+
+/** ID do bucket Storage dos MP3 (migração usa `audios`). Use `VITE_SUPABASE_AUDIOS_BUCKET` se o id no Dashboard for outro. */
+export function getAudiosBucketId(): string {
+  const id = (import.meta.env.VITE_SUPABASE_AUDIOS_BUCKET ?? "").trim();
+  return id || "audios";
+}

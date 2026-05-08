@@ -6,6 +6,8 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_PROJECT_ID: string;
   /** Base pública do bucket `audios` (sem barra final), ex.: …/storage/v1/object/public/audios */
   readonly VITE_PUBLIC_AUDIO_BASE_URL?: string;
+  /** ID técnico do bucket no Supabase (Dashboard → Storage → definições). Por omissão: audios */
+  readonly VITE_SUPABASE_AUDIOS_BUCKET?: string;
 }
 
 interface ImportMeta {

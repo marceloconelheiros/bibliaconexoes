@@ -8,6 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { ArrowLeft, Volume2, Play, Pause } from "lucide-react";
 import { toast } from "sonner";
 import { getAudioPlaybackUrl, getAudiosObjectPath } from "@/lib/audio-playback-url";
+import { getAudiosBucketId } from "@/lib/supabase-env";
 
 async function messageFromStorageErrorResponse(res: Response): Promise<string | undefined> {
   try {
@@ -25,12 +26,13 @@ function audioStorageFailureToast(
   apiMsg: string | undefined,
   objectPath: string | null,
 ): string {
+  const bucket = getAudiosBucketId();
   const head = `HTTP ${status} ao buscar o áudio.${apiMsg ? ` ${apiMsg}.` : ""}`;
   const nome = objectPath ? `"${objectPath}"` : '"Gn.mp3" (exemplo)';
   if (/not\s*found|nosuchkey|object\s+not\s+found/i.test(apiMsg ?? "")) {
-    return `${head} O ficheiro não está no Storage deste projeto. No Supabase: Storage → bucket audios → enviar ${nome} na raiz (sem pasta). Respeita maiúsculas. Ou define audio_url na faixa com um link direto ao MP3.`;
+    return `${head} O ficheiro não está no Storage deste projeto (bucket «${bucket}» está vazio ou o nome não coincide). Envie ${nome} na raiz, sem pasta — ou define audio_url no registo da faixa.`;
   }
-  return `${head} Envie ${nome} na raiz do bucket audios (público) ou preencha audio_url nesta faixa.`;
+  return `${head} Envie ${nome} na raiz do bucket «${bucket}» (público) ou preencha audio_url nesta faixa.`;
 }
 
 interface ChapterTimestamp {
