@@ -96,7 +96,11 @@ const Login = () => {
       return;
     }
     if (!faithTradition) {
-      toast({ title: "Selecione como você se identifica", variant: "destructive" });
+      toast({
+        title: "Selecione como você se identifica",
+        description: "Escolha uma opção na lista (logo acima do e-mail).",
+        variant: "destructive",
+      });
       return;
     }
     if (photoFile && photoFile.size > AVATAR_MAX_BYTES) {
@@ -254,6 +258,36 @@ const Login = () => {
                       onChange={(e) => setBirthDate(e.target.value)}
                     />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="faith-select">Como você se identifica</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Fé ou tradição que mais representa você (inclui Espiritismo/Kardecismo).
+                    </p>
+                    <Select value={faithTradition} onValueChange={setFaithTradition}>
+                      <SelectTrigger id="faith-select" className="bg-background">
+                        <SelectValue placeholder="Selecione uma opção..." />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {FAITH_TRADITION_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="faithDetail">Denominação ou detalhe (opcional)</Label>
+                    <Input
+                      id="faithDetail"
+                      placeholder="Ex.: Assembleia, Igreja Batista, Casa Espírita FEB, Universal…"
+                      value={faithDetail}
+                      onChange={(e) => setFaithDetail(e.target.value)}
+                    />
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="email-reg">E-mail</Label>
                     <Input
@@ -274,35 +308,6 @@ const Login = () => {
                       placeholder="Mínimo 6 caracteres"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Fé / tradição</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Escolha a opção que mais representa você (inclui Espiritismo/Kardecismo à parte).
-                    </p>
-                    <Select value={faithTradition} onValueChange={setFaithTradition}>
-                      <SelectTrigger className="bg-background">
-                        <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-72">
-                        {FAITH_TRADITION_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="faithDetail">Denominação ou detalhe (opcional)</Label>
-                    <Input
-                      id="faithDetail"
-                      placeholder="Ex.: Assembleia, Igreja Batista, Casa Espírita FEB, Universal…"
-                      value={faithDetail}
-                      onChange={(e) => setFaithDetail(e.target.value)}
                     />
                   </div>
 
