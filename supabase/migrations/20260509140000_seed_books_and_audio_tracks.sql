@@ -1,5 +1,6 @@
 -- Popula livros e faixas de áudio quando o banco está vazio (ex.: projeto novo na Vercel).
 -- Idempotente: só insere se não houver linhas em books / audio_tracks.
+-- MP3 no bucket `audios`: o app usa nome ASCII sem diacríticos (ex.: Êx→Ex.mp3, Jó→Job.mp3).
 
 DO $$
 BEGIN

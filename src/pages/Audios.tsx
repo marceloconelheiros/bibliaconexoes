@@ -9,6 +9,23 @@ import { ArrowLeft, Volume2, Play, Pause } from "lucide-react";
 import { toast } from "sonner";
 import { getAudioPlaybackUrl, getAudiosObjectPath } from "@/lib/audio-playback-url";
 
+async function supabaseStorageErrorMessage(url: string): Promise<string | undefined> {
+  try {
+    const r = await fetch(url, {
+      method: "GET",
+      mode: "cors",
+      headers: { Range: "bytes=0-8191" },
+    });
+    if (r.status === 206 || (r.ok && r.status === 200)) return undefined;
+    const text = await r.text();
+    if (!text.trimStart().startsWith("{")) return undefined;
+    const j = JSON.parse(text) as { message?: string; error?: string };
+    return j.message ?? j.error;
+  } catch {
+    return undefined;
+  }
+}
+
 interface ChapterTimestamp {
   chapter: number;
   time: number;
@@ -145,8 +162,9 @@ const Audios = () => {
       try {
         const probe = await fetch(src, { method: "HEAD", mode: "cors" });
         if (!probe.ok && probe.status !== 405) {
+          const apiMsg = await supabaseStorageErrorMessage(src);
           toast.error(
-            `HTTP ${probe.status} ao buscar o áudio. Envie ${fileHint} (Storage → bucket público **audios**) ou use audio_url nesta faixa.`,
+            `HTTP ${probe.status} ao buscar o áudio.${apiMsg ? ` ${apiMsg}` : ""} Envie ${fileHint} (bucket **audios** na raiz, público) ou preencha **audio_url**.`,
           );
           return;
         }
@@ -280,9 +298,10 @@ const Audios = () => {
                   <code className="text-xs">audio_tracks</code> do Supabase. Se o projeto está vazio,
                   aplique as migrações (por exemplo{" "}
                   <code className="text-xs">20260509140000_seed_books_and_audio_tracks.sql</code>) ou rode{" "}
-                  <code className="text-xs">supabase db push</code>. Depois, envie os MP3 ao bucket{" "}
-                  <code className="text-xs">audios</code> com o nome{" "}
-                  <code className="text-xs">Gn.mp3</code>, <code className="text-xs">Sl_PS1.mp3</code>, etc.
+                  <code className="text-xs">supabase db push</code>. Depois, envie os MP3 ao bucket público{" "}
+                  <code className="text-xs">audios</code> na raiz (ex.:{" "}
+                  <code className="text-xs">Gn.mp3</code>, <code className="text-xs">Ex.mp3</code> para Êxodo,{" "}
+                  <code className="text-xs">Sl_PS1.mp3</code>, etc.).
                 </p>
               </CardContent>
             </Card>
@@ -362,9 +381,7 @@ const Audios = () => {
                       <p className="text-sm text-muted-foreground leading-relaxed">
                         Sem arquivo encontrado para esta faixa. Envie o MP3 ao bucket público{" "}
                         <code className="text-xs">audios</code> com o nome{" "}
-                        <code className="text-xs">
-                          {book?.abbrev ? `${book.abbrev}${track.psalms_group !== "NONE" ? `_${track.psalms_group}` : ""}.mp3` : "{abbrev}.mp3"}
-                        </code>
+                        <code className="text-xs">{getAudiosObjectPath(track, book) ?? "{abbrev}.mp3"}</code>
                         , ou preencha{" "}
                         <code className="text-xs">audio_url</code> na linha deste livro. O app também monta a URL a partir de{" "}
                         <code className="text-xs">VITE_SUPABASE_URL</code> automaticamente.
