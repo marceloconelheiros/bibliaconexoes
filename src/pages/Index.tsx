@@ -15,6 +15,9 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfileAvatarUrl } from "@/hooks/useProfileAvatarUrl";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BRAND } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +65,8 @@ const HIGHLIGHTS: { icon: LucideIcon; label: string; detail: string }[] = [
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { session } = useAuth();
+  const avatarUrl = useProfileAvatarUrl(session?.user.id);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
@@ -129,20 +134,30 @@ const Index = () => {
             <Button
               variant="outline"
               size="sm"
-              className="hidden gap-2 border-border/80 bg-background/80 backdrop-blur-sm sm:inline-flex"
+              className="hidden gap-2 border-border/80 bg-background/80 pr-3 backdrop-blur-sm sm:inline-flex"
               onClick={() => navigate("/perfil")}
             >
-              <User className="h-4 w-4" />
+              <Avatar className="h-8 w-8 border border-border/60 shadow-sm">
+                <AvatarImage src={avatarUrl ?? undefined} alt="" />
+                <AvatarFallback className="rounded-full bg-muted">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                </AvatarFallback>
+              </Avatar>
               Perfil
             </Button>
             <Button
               variant="outline"
               size="icon"
-              className="border-border/80 bg-background/80 backdrop-blur-sm sm:hidden"
+              className="h-10 w-10 overflow-hidden rounded-full border-border/80 bg-background/80 p-0 backdrop-blur-sm sm:hidden"
               onClick={() => navigate("/perfil")}
               aria-label="Perfil"
             >
-              <User className="h-5 w-5" />
+              <Avatar className="h-full w-full border-0">
+                <AvatarImage src={avatarUrl ?? undefined} alt="" />
+                <AvatarFallback className="rounded-full bg-muted">
+                  <User className="h-5 w-5 text-muted-foreground" />
+                </AvatarFallback>
+              </Avatar>
             </Button>
             <ThemeToggle />
           </div>

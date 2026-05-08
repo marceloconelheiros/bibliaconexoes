@@ -29,16 +29,25 @@ export function abbrevToAudiosStorageSlug(abbrev: string): string {
   return t.normalize("NFD").replace(/\p{M}/gu, "");
 }
 
+/** Só aceita grupos de Salmos válidos; qualquer outro valor não altera o nome do ficheiro. */
+function psalmsGroupFileSuffix(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  const s = String(raw).trim().toUpperCase();
+  if (s === "" || s === "NONE") return null;
+  return /^PS[1-5]$/.test(s) ? s : null;
+}
+
 /** Caminho do objeto dentro do bucket `audios` (ex.: `Gn.mp3`, `Ex.mp3`, `Sl_PS1.mp3`). */
 export function getAudiosObjectPath(
   track: { psalms_group: string | null },
   book?: BookForAudio,
 ): string | null {
   if (!book?.abbrev?.trim()) return null;
-  const slug = abbrevToAudiosStorageSlug(book.abbrev);
+  let slug = abbrevToAudiosStorageSlug(book.abbrev);
+  slug = slug.replace(/[^A-Za-z0-9]/g, "");
   if (!slug) return null;
-  const group = track.psalms_group;
-  if (group && group !== "NONE") {
+  const group = psalmsGroupFileSuffix(track.psalms_group);
+  if (group) {
     return `${slug}_${group}.mp3`;
   }
   return `${slug}.mp3`;

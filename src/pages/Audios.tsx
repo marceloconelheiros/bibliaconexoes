@@ -160,8 +160,15 @@ const Audios = () => {
 
     try {
       try {
-        const probe = await fetch(src, { method: "HEAD", mode: "cors" });
-        if (!probe.ok && probe.status !== 405) {
+        // HEAD devolve 400 em muitos projetos Storage público; GET com Range mínimo é fiável.
+        const probe = await fetch(src, {
+          method: "GET",
+          mode: "cors",
+          headers: { Range: "bytes=0-0" },
+        });
+        const probeOk =
+          probe.ok || probe.status === 206 || probe.status === 416;
+        if (!probeOk) {
           const apiMsg = await supabaseStorageErrorMessage(src);
           toast.error(
             `HTTP ${probe.status} ao buscar o áudio.${apiMsg ? ` ${apiMsg}` : ""} Envie ${fileHint} (bucket **audios** na raiz, público) ou preencha **audio_url**.`,
@@ -169,7 +176,7 @@ const Audios = () => {
           return;
         }
       } catch {
-        /* HEAD pode falhar por rede/CORS; o elemento <audio> tentará mesmo assim */
+        /* rede/CORS; o elemento <audio> tentará mesmo assim */
       }
 
       const audio = new Audio(src);
