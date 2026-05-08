@@ -114,7 +114,9 @@ const Audios = () => {
     const src = getAudioPlaybackUrl(track, book);
 
     if (!src) {
-      toast.error("URL do áudio não disponível — cadastre em audio_tracks.audio_url ou use VITE_PUBLIC_AUDIO_BASE_URL no .env");
+      toast.error(
+        "Sem URL para esta faixa — verifique se o livro tem abbrev no Supabase ou se VITE_SUPABASE_URL está no .env.",
+      );
       return;
     }
 
@@ -139,9 +141,18 @@ const Audios = () => {
     // Create and play new audio
     try {
       const audio = new Audio(src);
-      
+      audio.crossOrigin = "anonymous";
+
       audio.onerror = () => {
-        toast.error(`Erro ao carregar áudio de ${track.title}`);
+        const code = audio.error?.code;
+        const hints: Record<number, string> = {
+          2: "Erro de rede ou CORS.",
+          3: "Erro ao decodificar o arquivo.",
+          4: "URL inválida ou arquivo não encontrado (confira o nome no bucket audios: {abbrev}.mp3).",
+        };
+        const hint = code != null ? hints[code] ?? "" : "";
+        console.error("[Áudio]", track.title, src, audio.error);
+        toast.error(`Não foi possível carregar o áudio.${hint ? ` ${hint}` : ""}`);
         setCurrentPlaying(null);
         setAudioElement(null);
       };
@@ -247,10 +258,17 @@ const Audios = () => {
         <div className="space-y-4">
           {audioTracks.length === 0 ? (
             <Card>
-              <CardContent className="py-12 text-center">
-                <Volume2 className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">
-                  Nenhum áudio disponível ainda
+              <CardContent className="py-12 space-y-4 text-center px-4">
+                <Volume2 className="w-12 h-12 mx-auto text-muted-foreground" />
+                <p className="text-muted-foreground font-medium">Nenhuma faixa listada</p>
+                <p className="text-sm text-muted-foreground max-w-lg mx-auto leading-relaxed">
+                  O app busca os registros nas tabelas <code className="text-xs">books</code> e{" "}
+                  <code className="text-xs">audio_tracks</code> do Supabase. Se o projeto está vazio,
+                  aplique as migrações (por exemplo{" "}
+                  <code className="text-xs">20260509140000_seed_books_and_audio_tracks.sql</code>) ou rode{" "}
+                  <code className="text-xs">supabase db push</code>. Depois, envie os MP3 ao bucket{" "}
+                  <code className="text-xs">audios</code> com o nome{" "}
+                  <code className="text-xs">Gn.mp3</code>, <code className="text-xs">Sl_PS1.mp3</code>, etc.
                 </p>
               </CardContent>
             </Card>
@@ -328,10 +346,14 @@ const Audios = () => {
                   {!canPlay && (
                     <CardContent>
                       <p className="text-sm text-muted-foreground leading-relaxed">
-                        Sem URL de reprodução. No Supabase, preencha <code className="text-xs">audio_tracks.audio_url</code>{" "}
-                        ou envie arquivos ao bucket <code className="text-xs">audios</code> e defina{" "}
-                        <code className="text-xs">VITE_PUBLIC_AUDIO_BASE_URL</code> no{" "}
-                        <code className="text-xs">.env</code> (veja .env.example).
+                        Sem arquivo encontrado para esta faixa. Envie o MP3 ao bucket público{" "}
+                        <code className="text-xs">audios</code> com o nome{" "}
+                        <code className="text-xs">
+                          {book?.abbrev ? `${book.abbrev}${track.psalms_group !== "NONE" ? `_${track.psalms_group}` : ""}.mp3` : "{abbrev}.mp3"}
+                        </code>
+                        , ou preencha{" "}
+                        <code className="text-xs">audio_url</code> na linha deste livro. O app também monta a URL a partir de{" "}
+                        <code className="text-xs">VITE_SUPABASE_URL</code> automaticamente.
                       </p>
                     </CardContent>
                   )}
