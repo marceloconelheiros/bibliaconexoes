@@ -193,7 +193,7 @@ const Login = () => {
       <Card
         className={`w-full min-w-0 max-w-full border border-border/60 shadow-2xl bg-card/90 backdrop-blur-md relative z-10 animate-fade-in ${isRegister ? "max-w-lg" : "max-w-md"}`}
       >
-        <CardHeader className="text-center space-y-4 pb-2">
+        <CardHeader className="text-center space-y-4 pb-2 px-4 sm:px-6 pt-6">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <img
               src="/logo.png"
@@ -348,9 +348,9 @@ const Login = () => {
                     </div>
                   </div>
                 </div>
-              </ScrollArea>
+              </div>
 
-              <Button type="submit" className="w-full gap-2" size="lg" disabled={loading}>
+              <Button type="submit" className="w-full gap-2 max-w-full" size="lg" disabled={loading}>
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
@@ -362,8 +362,8 @@ const Login = () => {
               </Button>
             </form>
           ) : (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
+            <form onSubmit={handleLogin} className="space-y-4 min-w-0 max-w-full box-border">
+              <div className="space-y-2 min-w-0 max-w-full">
                 <Label htmlFor="email">E-mail</Label>
                 <Input
                   id="email"
@@ -372,9 +372,10 @@ const Login = () => {
                   placeholder="seu@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="min-w-0 max-w-full"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0 max-w-full">
                 <Label htmlFor="password">Senha</Label>
                 <Input
                   id="password"
@@ -383,9 +384,10 @@ const Login = () => {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className="min-w-0 max-w-full"
                 />
               </div>
-              <Button type="submit" className="w-full gap-2" size="lg" disabled={loading}>
+              <Button type="submit" className="w-full gap-2 max-w-full" size="lg" disabled={loading}>
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
