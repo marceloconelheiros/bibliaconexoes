@@ -166,7 +166,7 @@ export const EXECUTIVE_STUDIES: ExecutiveStudy[] = [
     aplicacao: [
       "Auditoria de pequenos desvios (notas, horas, comunicações).",
       "Transparência com fornecedores e clientes pequenos também conta.",
-      "“Servos de duas senhoras” — confirme se há conflito de lealdades não declarado.",
+      "“Servos de dois senhores” — confirme se há conflito de lealdades não declarado.",
     ],
   },
   {
@@ -197,7 +197,7 @@ export const EXECUTIVE_STUDIES: ExecutiveStudy[] = [
   },
   {
     id: "1tm-6",
-    bookAbbrev: "1Tm",
+    bookAbbrev: "1Tn",
     chapter: 6,
     title: "Contentamento vs. amor ao dinheiro",
     lens:

@@ -55,7 +55,7 @@ export const bookNames: Record<string, string> = {
   "Cl": "Colossenses",
   "1Ts": "1 Tessalonicenses",
   "2Ts": "2 Tessalonicenses",
-  "1Tm": "1 Timóteo",
+  "1Tn": "1 Timóteo",
   "2Tm": "2 Timóteo",
   "Tt": "Tito",
   "Fm": "Filemom",

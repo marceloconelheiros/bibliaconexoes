@@ -10,6 +10,7 @@ import EstudosEmpresarios from "./pages/EstudosEmpresarios";
 import InstalarApp from "./pages/InstalarApp";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import Perfil from "./pages/Perfil";
 
 const AppRoutes = () => {
   const { isLoggedIn, loading } = useAuth();
@@ -36,6 +37,7 @@ const AppRoutes = () => {
         <Route path="/audios" element={<Audios />} />
         <Route path="/biblia" element={<BibliaOnline />} />
         <Route path="/estudos-empresarios" element={<EstudosEmpresarios />} />
+        <Route path="/perfil" element={<Perfil />} />
         <Route path="/instalar" element={<InstalarApp />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

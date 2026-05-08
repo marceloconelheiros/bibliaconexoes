@@ -231,10 +231,12 @@ export type Database = {
           cidade: string
           created_at: string
           email: string | null
+          estado_civil: string
           faith_detail: string | null
           faith_tradition: string
           id: string
           nome: string
+          profissao: string
           updated_at: string
           whatsapp: string
         }
@@ -244,10 +246,12 @@ export type Database = {
           cidade?: string
           created_at?: string
           email?: string | null
+          estado_civil?: string
           faith_detail?: string | null
           faith_tradition?: string
           id: string
           nome?: string
+          profissao?: string
           updated_at?: string
           whatsapp?: string
         }
@@ -257,10 +261,12 @@ export type Database = {
           cidade?: string
           created_at?: string
           email?: string | null
+          estado_civil?: string
           faith_detail?: string | null
           faith_tradition?: string
           id?: string
           nome?: string
+          profissao?: string
           updated_at?: string
           whatsapp?: string
         }

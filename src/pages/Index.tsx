@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { BookOpen, Volume2, Sparkles, CalendarCheck, Download, BriefcaseBusiness } from "lucide-react";
+import { BookOpen, Volume2, Sparkles, CalendarCheck, Download, BriefcaseBusiness, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BRAND } from "@/lib/brand";
 
@@ -53,7 +53,16 @@ const Index = () => {
               <p className="text-sm font-medium text-primary/90">{BRAND.tagline}</p>
             </div>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2 shrink-0">
+            <Button variant="outline" size="sm" className="gap-2 hidden sm:inline-flex" onClick={() => navigate("/perfil")}>
+              <User className="w-4 h-4" />
+              Perfil
+            </Button>
+            <Button variant="outline" size="icon" className="sm:hidden" onClick={() => navigate("/perfil")} aria-label="Perfil">
+              <User className="w-5 h-5" />
+            </Button>
+            <ThemeToggle />
+          </div>
         </div>
 
         {/* Hero Section */}

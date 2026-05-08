@@ -7,6 +7,7 @@ import { LogIn, UserPlus, Loader2, Camera, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BRAND } from "@/lib/brand";
+import { AVATAR_MAX_BYTES, uploadUserAvatar } from "@/lib/avatar-upload";
 import { FAITH_TRADITION_OPTIONS } from "@/lib/faith-traditions";
 import { isLikelyMobileDigits, normalizeWhatsappDigits } from "@/lib/whatsapp";
 import {
@@ -17,22 +18,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
-
-async function uploadAvatar(userId: string, file: File) {
-  const extRaw = file.name.split(".").pop()?.toLowerCase();
-  const ext = ["jpg", "jpeg", "png", "webp", "gif"].includes(extRaw || "") ? extRaw : "jpg";
-  const path = `${userId}/avatar.${ext}`;
-  const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
-    upsert: true,
-    contentType: file.type || `image/${ext}`,
-  });
-  if (upErr) throw upErr;
-  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-  const { error: dbErr } = await supabase.from("profiles").update({ avatar_url: data.publicUrl }).eq("id", userId);
-  if (dbErr) throw dbErr;
-}
 
 const Login = () => {
   const [isRegister, setIsRegister] = useState(false);
@@ -146,7 +131,7 @@ const Login = () => {
     let photoUploadFailed = false;
     if (data.session?.user && photoFile) {
       try {
-        await uploadAvatar(data.session.user.id, photoFile);
+        await uploadUserAvatar(data.session.user.id, photoFile);
       } catch (err) {
         console.error(err);
         photoUploadFailed = true;
