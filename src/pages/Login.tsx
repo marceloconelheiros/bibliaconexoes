@@ -17,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 const Login = () => {
   const [isRegister, setIsRegister] = useState(false);
@@ -189,17 +188,17 @@ const Login = () => {
     <div className="min-h-screen bg-gradient-to-br from-primary/[0.08] via-background to-accent/30 flex items-center justify-center p-4 relative overflow-hidden py-10">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,hsl(var(--primary)/0.18),transparent)] pointer-events-none" />
       <div className="absolute top-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-      <div className="absolute bottom-0 right-0 w-[28rem] h-[28rem] bg-amber-400/10 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
+      <div className="absolute bottom-0 right-0 w-[28rem] h-[28rem] bg-slate-400/12 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
 
       <Card
-        className={`w-full border border-border/60 shadow-2xl bg-card/90 backdrop-blur-md relative z-10 animate-fade-in rounded-2xl ${isRegister ? "max-w-lg" : "max-w-md"}`}
+        className={`w-full min-w-0 max-w-full border border-border/60 shadow-2xl bg-card/90 backdrop-blur-md relative z-10 animate-fade-in ${isRegister ? "max-w-lg" : "max-w-md"}`}
       >
         <CardHeader className="text-center space-y-4 pb-2">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <img
               src="/logo.png"
               alt={BRAND.name}
-              className="w-14 h-14 rounded-2xl shadow-md ring-2 ring-primary/15"
+              className="w-14 h-14 rounded-[3px] shadow-md ring-2 ring-primary/15 shrink-0"
             />
             <div className="text-center sm:text-left">
               <CardTitle className="font-display text-3xl font-bold tracking-tight text-foreground">
@@ -212,12 +211,15 @@ const Login = () => {
             {isRegister ? "Preencha seus dados para criar a conta" : "Entre para continuar sua jornada"}
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0 overflow-hidden px-4 sm:px-6">
           {isRegister ? (
-            <form onSubmit={handleRegister} className="space-y-4">
-              <ScrollArea className="max-h-[min(68vh,540px)] pr-4">
-                <div className="space-y-4 pb-2">
-                  <div className="space-y-2">
+            <form onSubmit={handleRegister} className="space-y-4 min-w-0 max-w-full box-border">
+              <div
+                className="max-h-[min(68vh,540px)] overflow-y-auto overflow-x-hidden min-w-0 w-full max-w-full [-webkit-overflow-scrolling:touch] overscroll-y-contain pr-1 sm:pr-0"
+                style={{ scrollbarGutter: "stable" }}
+              >
+                <div className="space-y-4 pb-2 min-w-0 max-w-full">
+                  <div className="space-y-2 min-w-0 max-w-full">
                     <Label htmlFor="nome">Nome completo</Label>
                     <Input
                       id="nome"
@@ -227,7 +229,7 @@ const Login = () => {
                       onChange={(e) => setNome(e.target.value)}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-0 max-w-full">
                     <Label htmlFor="cidade">Cidade</Label>
                     <Input
                       id="cidade"
@@ -237,7 +239,7 @@ const Login = () => {
                       onChange={(e) => setCidade(e.target.value)}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-0 max-w-full">
                     <Label htmlFor="whatsapp">WhatsApp</Label>
                     <Input
                       id="whatsapp"
@@ -249,7 +251,7 @@ const Login = () => {
                       onChange={(e) => setWhatsapp(e.target.value)}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-0 max-w-full">
                     <Label htmlFor="birthDate">Data de nascimento</Label>
                     <Input
                       id="birthDate"
@@ -259,13 +261,13 @@ const Login = () => {
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-0 max-w-full">
                     <Label htmlFor="faith-select">Como você se identifica</Label>
                     <p className="text-xs text-muted-foreground">
                       Fé ou tradição que mais representa você (inclui Espiritismo/Kardecismo).
                     </p>
                     <Select value={faithTradition} onValueChange={setFaithTradition}>
-                      <SelectTrigger id="faith-select" className="bg-background">
+                      <SelectTrigger id="faith-select" className="bg-background w-full min-w-0 max-w-full">
                         <SelectValue placeholder="Selecione uma opção..." />
                       </SelectTrigger>
                       <SelectContent className="max-h-72">
@@ -278,17 +280,18 @@ const Login = () => {
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-0 max-w-full">
                     <Label htmlFor="faithDetail">Denominação ou detalhe (opcional)</Label>
                     <Input
                       id="faithDetail"
+                      className="min-w-0 max-w-full"
                       placeholder="Ex.: Assembleia, Igreja Batista, Casa Espírita FEB, Universal…"
                       value={faithDetail}
                       onChange={(e) => setFaithDetail(e.target.value)}
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-0 max-w-full">
                     <Label htmlFor="email-reg">E-mail</Label>
                     <Input
                       id="email-reg"
@@ -299,7 +302,7 @@ const Login = () => {
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-0 max-w-full">
                     <Label htmlFor="password-reg">Senha</Label>
                     <Input
                       id="password-reg"
@@ -311,21 +314,21 @@ const Login = () => {
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 min-w-0 max-w-full">
                     <Label>Foto de perfil (opcional)</Label>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="relative h-20 w-20 rounded-full overflow-hidden border-2 border-dashed border-border bg-muted flex items-center justify-center shrink-0">
+                    <div className="flex flex-wrap items-center gap-3 min-w-0 max-w-full">
+                      <div className="relative h-20 w-20 rounded-[3px] overflow-hidden border-2 border-dashed border-border bg-muted flex items-center justify-center shrink-0">
                         {photoPreview ? (
                           <img src={photoPreview} alt="" className="h-full w-full object-cover" />
                         ) : (
                           <Camera className="h-8 w-8 text-muted-foreground" />
                         )}
                       </div>
-                      <div className="flex flex-col gap-2 flex-1 min-w-[160px]">
+                      <div className="flex flex-col gap-2 flex-1 min-w-0 basis-[min(100%,160px)] max-w-full">
                         <Input
                           type="file"
                           accept="image/jpeg,image/png,image/webp,image/gif"
-                          className="cursor-pointer text-sm"
+                          className="cursor-pointer text-sm min-w-0 max-w-full"
                           onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
                         />
                         {photoFile && (

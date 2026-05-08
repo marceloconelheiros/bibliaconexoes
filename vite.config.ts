@@ -22,7 +22,7 @@ export default defineConfig(({ mode }) => ({
         short_name: 'Conexões',
         description:
           'Planos de leitura, Bíblia online e áudio para sua jornada espiritual.',
-        theme_color: '#227a68',
+        theme_color: '#2563eb',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',

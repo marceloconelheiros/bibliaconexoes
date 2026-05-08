@@ -90,7 +90,7 @@ const BibliaOnline = () => {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-emerald-900 flex items-center justify-center shrink-0 shadow-md">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-slate-900 flex items-center justify-center shrink-0 shadow-md">
                 <BookOpen className="w-6 h-6 text-primary-foreground" />
               </div>
               <div className="min-w-0">
@@ -149,7 +149,7 @@ const BibliaOnline = () => {
                 >
                   {index + 1}
                   {insight && (
-                    <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-amber-400 ring-2 ring-background" />
+                    <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-blue-400 ring-2 ring-background" />
                   )}
                 </Button>
               );
@@ -160,10 +160,10 @@ const BibliaOnline = () => {
         {viewMode === "reading" && selectedBook && selectedChapter !== null && (
           <div className="space-y-6">
             {executiveInsight && (
-              <Card className="border-l-4 border-l-amber-500 bg-amber-500/[0.06] dark:bg-amber-500/[0.08] shadow-sm">
+              <Card className="border-l-4 border-l-blue-500 bg-blue-500/[0.06] dark:bg-blue-500/[0.09] shadow-sm">
                 <CardHeader className="pb-2 pt-4">
                   <CardTitle className="flex items-start gap-3 text-lg font-display">
-                    <Lightbulb className="h-6 w-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <Lightbulb className="h-6 w-6 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                     <span>
                       <span className="block text-xs font-sans font-normal uppercase tracking-wider text-muted-foreground mb-1">
                         Momento de reflexão · líderes & negócios

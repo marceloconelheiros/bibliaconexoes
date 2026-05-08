@@ -39,7 +39,7 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-accent/25 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_60%_at_50%_-10%,hsl(var(--primary)/0.12),transparent)] pointer-events-none" />
       <div className="absolute top-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-      <div className="absolute bottom-0 right-0 w-[28rem] h-[28rem] bg-amber-400/12 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
+      <div className="absolute bottom-0 right-0 w-[28rem] h-[28rem] bg-slate-400/15 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
       
       <div className="container mx-auto px-4 py-8 max-w-5xl relative">
         {/* Header */}
@@ -90,7 +90,7 @@ const Index = () => {
         {/* Main Cards */}
         <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 mb-12">
           <Card 
-            className="group cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] border-0 bg-gradient-to-br from-primary to-emerald-900 text-primary-foreground animate-fade-in overflow-hidden rounded-xl shadow-xl"
+            className="group cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] border-0 bg-gradient-to-br from-primary to-slate-900 text-primary-foreground animate-fade-in overflow-hidden rounded-xl shadow-xl"
             onClick={() => navigate("/audios")}
           >
             <CardContent className="p-6 md:p-8 relative">
@@ -112,7 +112,7 @@ const Index = () => {
           </Card>
 
           <Card 
-            className="group cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] border-0 bg-gradient-to-br from-amber-600 to-orange-700 text-white animate-fade-in overflow-hidden shadow-xl rounded-xl"
+            className="group cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] border-0 bg-gradient-to-br from-slate-700 to-blue-950 text-white animate-fade-in overflow-hidden shadow-xl rounded-xl"
             onClick={() => navigate("/biblia")}
           >
             <CardContent className="p-6 md:p-8 relative">
@@ -155,7 +155,7 @@ const Index = () => {
           </Card>
 
           <Card 
-            className="group cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] border-0 bg-gradient-to-br from-teal-700 to-primary text-primary-foreground animate-fade-in overflow-hidden shadow-xl rounded-xl"
+            className="group cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] border-0 bg-gradient-to-br from-slate-800 to-primary text-primary-foreground animate-fade-in overflow-hidden shadow-xl rounded-xl"
             onClick={() => navigate("/meus-planos")}
           >
             <CardContent className="p-6 md:p-8 relative">
@@ -188,8 +188,8 @@ const Index = () => {
           </div>
           
           <div className="text-center p-6 rounded-2xl bg-card/40 backdrop-blur border border-border/50 shadow-sm">
-            <div className="w-12 h-12 bg-amber-500/15 rounded-full flex items-center justify-center mx-auto mb-4">
-              <BookOpen className="w-6 h-6 text-amber-700 dark:text-amber-400" />
+            <div className="w-12 h-12 bg-blue-500/12 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="w-6 h-6 text-blue-700 dark:text-blue-400" />
             </div>
             <h4 className="font-semibold mb-2">Bíblia + reflexão</h4>
             <p className="text-sm text-muted-foreground">Capítulos marcados com insight para negócios</p>
@@ -204,8 +204,8 @@ const Index = () => {
           </div>
 
           <div className="text-center p-6 rounded-2xl bg-card/40 backdrop-blur border border-border/50 shadow-sm">
-            <div className="w-12 h-12 bg-teal-600/15 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CalendarCheck className="w-6 h-6 text-teal-700 dark:text-teal-400" />
+            <div className="w-12 h-12 bg-slate-500/15 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CalendarCheck className="w-6 h-6 text-slate-700 dark:text-slate-300" />
             </div>
             <h4 className="font-semibold mb-2">Planos Personalizados</h4>
             <p className="text-sm text-muted-foreground">3, 6 meses ou 1 ano de leitura</p>
