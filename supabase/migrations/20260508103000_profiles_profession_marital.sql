@@ -1,4 +1,5 @@
 -- Perfil: profissão e estado civil
+-- Pré-requisito: aplicar antes 20260507120000_profiles_avatar_bucket.sql (cria public.profiles).
 
 alter table public.profiles add column if not exists profissao text not null default '';
 

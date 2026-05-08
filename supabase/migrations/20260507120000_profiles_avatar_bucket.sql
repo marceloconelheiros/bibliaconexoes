@@ -1,5 +1,7 @@
 -- Perfis públicos (1:1 com auth.users) + bucket de fotos
-create table public.profiles (
+-- Idempotente: pode rerodar no SQL Editor sem erro se já existir.
+
+create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   nome text not null default '',
   cidade text not null default '',
@@ -15,18 +17,21 @@ create table public.profiles (
 
 comment on table public.profiles is 'Dados do usuário após cadastro; preenchido via trigger a partir do user_metadata do Auth.';
 
-create index profiles_faith_tradition_idx on public.profiles (faith_tradition);
+create index if not exists profiles_faith_tradition_idx on public.profiles (faith_tradition);
 
 alter table public.profiles enable row level security;
 
+drop policy if exists "profiles_select_own" on public.profiles;
 create policy "profiles_select_own"
   on public.profiles for select
   using (auth.uid() = id);
 
+drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own"
   on public.profiles for update
   using (auth.uid() = id);
 
+drop policy if exists "profiles_insert_own" on public.profiles;
 create policy "profiles_insert_own"
   on public.profiles for insert
   with check (auth.uid() = id);
@@ -39,6 +44,7 @@ begin
 end;
 $$;
 
+drop trigger if exists profiles_set_updated_at on public.profiles;
 create trigger profiles_set_updated_at
   before update on public.profiles
   for each row execute function public.set_profiles_updated_at();
@@ -79,6 +85,7 @@ begin
 end;
 $$;
 
+drop trigger if exists on_auth_user_created_profile on auth.users;
 create trigger on_auth_user_created_profile
   after insert on auth.users
   for each row execute function public.handle_new_user_profile();
@@ -88,10 +95,12 @@ insert into storage.buckets (id, name, public)
 values ('avatars', 'avatars', true)
 on conflict (id) do nothing;
 
+drop policy if exists "avatars_public_read" on storage.objects;
 create policy "avatars_public_read"
   on storage.objects for select
   using (bucket_id = 'avatars');
 
+drop policy if exists "avatars_insert_own_folder" on storage.objects;
 create policy "avatars_insert_own_folder"
   on storage.objects for insert to authenticated
   with check (
@@ -99,6 +108,7 @@ create policy "avatars_insert_own_folder"
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
+drop policy if exists "avatars_update_own_folder" on storage.objects;
 create policy "avatars_update_own_folder"
   on storage.objects for update to authenticated
   using (
@@ -106,6 +116,7 @@ create policy "avatars_update_own_folder"
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
+drop policy if exists "avatars_delete_own_folder" on storage.objects;
 create policy "avatars_delete_own_folder"
   on storage.objects for delete to authenticated
   using (
