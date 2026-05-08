@@ -16,15 +16,14 @@ function EnvMissing() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center bg-background text-foreground">
         <h1 className="text-xl font-semibold">Configuração incompleta</h1>
         <p className="max-w-lg text-muted-foreground text-sm leading-relaxed">
-          Na Vercel: projeto → <strong className="text-foreground">Settings → Environment Variables</strong>{" "}
-          e cadastre{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 text-xs">VITE_SUPABASE_URL</code> e{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
-            VITE_SUPABASE_PUBLISHABLE_KEY
-          </code>{" "}
-          (iguais ao Supabase → Settings → API). Em seguida{" "}
-          <strong className="text-foreground">Deployments → ⋯ → Redeploy</strong> (marque limpar cache se
-          aparecer).
+          Na Vercel: <strong className="text-foreground">Settings → Environment Variables</strong> (ambiente{" "}
+          <strong className="text-foreground">Production</strong>) com{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5 text-xs">VITE_SUPABASE_URL</code> no formato{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5 text-xs">https://xxxx.supabase.co</code> (copie do
+          Supabase → Settings → API, <strong className="text-foreground">sem aspas</strong>) e{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5 text-xs">VITE_SUPABASE_PUBLISHABLE_KEY</code> (anon
+          public). Depois <strong className="text-foreground">Deployments → Redeploy</strong> — o Vite só
+          lê essas variáveis na hora do build.
         </p>
       </div>
     </ThemeProvider>
