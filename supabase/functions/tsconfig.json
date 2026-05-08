@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"],
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "types": [],
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@supabase/supabase-js": ["../../node_modules/@supabase/supabase-js"]
+    }
+  },
+  "files": ["url-shims.d.ts", "generate-plan/index.ts", "next-chapter/index.ts", "toggle-progress/index.ts"]
+}

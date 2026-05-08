@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Slider } from "@/components/ui/slider";
 import { ArrowLeft, Volume2, Play, Pause } from "lucide-react";
 import { toast } from "sonner";
+import { getAudioPlaybackUrl } from "@/lib/audio-playback-url";
 
 interface ChapterTimestamp {
   chapter: number;
@@ -25,6 +26,7 @@ interface AudioTrack {
 interface Book {
   id: string;
   name: string;
+  abbrev: string;
   testament: string;
   order_index: number;
 }
@@ -40,11 +42,11 @@ const Audios = () => {
   const [duration, setDuration] = useState<number>(0);
 
   useEffect(() => {
-    loadAudioData();
-    setLoading(false);
+    void loadAudioData();
   }, []);
 
   const loadAudioData = async () => {
+    setLoading(true);
     // Load books first to ensure proper ordering
     const { data: booksData, error: booksError } = await supabase
       .from("books")
@@ -53,6 +55,7 @@ const Audios = () => {
 
     if (booksError) {
       toast.error("Erro ao carregar livros");
+      setLoading(false);
       return;
     }
 
@@ -63,6 +66,7 @@ const Audios = () => {
 
     if (tracksError) {
       toast.error("Erro ao carregar áudios");
+      setLoading(false);
       return;
     }
 
@@ -93,6 +97,7 @@ const Audios = () => {
     
     setAudioTracks(sortedTracks);
     setBooks(booksMap);
+    setLoading(false);
   };
 
   const saveAudioProgress = (trackId: string, time: number) => {
@@ -105,29 +110,35 @@ const Audios = () => {
   };
 
   const playAudio = (track: AudioTrack) => {
-    if (!track.audio_url) {
-      toast.error("URL do áudio não disponível");
+    const book = books.get(track.book_id);
+    const src = getAudioPlaybackUrl(track, book);
+
+    if (!src) {
+      toast.error("URL do áudio não disponível — cadastre em audio_tracks.audio_url ou use VITE_PUBLIC_AUDIO_BASE_URL no .env");
       return;
     }
 
-    // Stop current audio if playing
-    if (audioElement) {
-      saveAudioProgress(currentPlaying!, audioElement.currentTime);
+    // If clicking on the same track, pause and dismiss player chrome
+    if (currentPlaying === track.id && audioElement) {
+      saveAudioProgress(track.id, audioElement.currentTime);
       audioElement.pause();
       setAudioElement(null);
-    }
-
-    // If clicking on the same track, just pause
-    if (currentPlaying === track.id) {
       setCurrentPlaying(null);
       setCurrentTime(0);
       setDuration(0);
       return;
     }
 
+    // Stop current audio if playing another track
+    if (audioElement) {
+      saveAudioProgress(currentPlaying!, audioElement.currentTime);
+      audioElement.pause();
+      setAudioElement(null);
+    }
+
     // Create and play new audio
     try {
-      const audio = new Audio(track.audio_url);
+      const audio = new Audio(src);
       
       audio.onerror = () => {
         toast.error(`Erro ao carregar áudio de ${track.title}`);
@@ -221,7 +232,10 @@ const Audios = () => {
               <div>
                 <h1 className="text-2xl font-bold">Bíblia em Áudio</h1>
                 <p className="text-sm text-muted-foreground">
-                  {audioTracks.length} áudios disponíveis
+                  {
+                    audioTracks.filter((t) => getAudioPlaybackUrl(t, books.get(t.book_id))).length
+                  }{" "}
+                  de {audioTracks.length} faixas com áudio configurado
                 </p>
               </div>
             </div>
@@ -244,6 +258,7 @@ const Audios = () => {
             audioTracks.map((track) => {
               const book = books.get(track.book_id);
               const isPlaying = currentPlaying === track.id;
+              const canPlay = !!getAudioPlaybackUrl(track, book);
 
               return (
                 <Card 
@@ -264,7 +279,7 @@ const Audios = () => {
                         size="icon"
                         variant={isPlaying ? "default" : "outline"}
                         onClick={() => playAudio(track)}
-                        disabled={!track.audio_url}
+                        disabled={!canPlay}
                       >
                         {isPlaying ? (
                           <Pause className="w-4 h-4" />
@@ -310,10 +325,13 @@ const Audios = () => {
                       )}
                     </CardContent>
                   )}
-                  {!track.audio_url && (
+                  {!canPlay && (
                     <CardContent>
-                      <p className="text-sm text-muted-foreground">
-                        Áudio não disponível
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Sem URL de reprodução. No Supabase, preencha <code className="text-xs">audio_tracks.audio_url</code>{" "}
+                        ou envie arquivos ao bucket <code className="text-xs">audios</code> e defina{" "}
+                        <code className="text-xs">VITE_PUBLIC_AUDIO_BASE_URL</code> no{" "}
+                        <code className="text-xs">.env</code> (veja .env.example).
                       </p>
                     </CardContent>
                   )}
