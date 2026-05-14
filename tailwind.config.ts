@@ -14,8 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["DM Sans", "system-ui", "sans-serif"],
-        display: ["Fraunces", "Georgia", "serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        /** Alias para títulos — mesmo Inter, tracking afinado no componente. */
+        display: ["Inter", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

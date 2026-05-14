@@ -1,14 +1,20 @@
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export const ThemeToggle = () => {
+type ThemeToggleProps = {
+  className?: string;
+};
+
+export const ThemeToggle = ({ className }: ThemeToggleProps) => {
   const { theme, setTheme } = useTheme();
 
   return (
     <Button
       variant="ghost"
       size="icon"
+      className={cn("relative", className)}
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
     >
       <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
