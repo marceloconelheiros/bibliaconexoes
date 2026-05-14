@@ -77,8 +77,18 @@ type ChapterPlaybackItem = {
   objectPath: string;
 };
 
+function isPsalmsLikeBook(book: Book): boolean {
+  const ab = book.abbrev.trim().toUpperCase().replace(/\./g, "");
+  const nm = book.name.normalize("NFD").replace(/\p{M}/gu, "").toUpperCase();
+  return ab === "SL" || ab === "PS" || nm.includes("SALMO");
+}
+
+/** Grelha de capítulos: livros normais + Salmos em faixas PS1–PS5 quando o livro é Salmos. */
 function supportsChapterBoard(book: Book | undefined, track: AudioTrack): boolean {
-  return !!book && track.psalms_group === "NONE" && book.chapters_count > 0;
+  if (!book || book.chapters_count <= 0) return false;
+  if (track.psalms_group === "NONE") return true;
+  const grp = String(track.psalms_group ?? "NONE").trim().toUpperCase();
+  return /^PS[1-5]$/.test(grp) && isPsalmsLikeBook(book);
 }
 
 type PlaybackTail =

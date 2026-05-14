@@ -178,7 +178,7 @@ export function bucketObjectPathFromPublicUrl(url: string, bucketId?: string): s
 /**
  * Pasta no bucket onde estão MP3 por capítulo.
  * — `audio_url` sem ficheiro (ex.: …/Genesis) → essa pasta.
- * — Sem `audio_url`, faixa «normal» (não Salmos por grupo): pasta do livro com `VITE_SUPABASE_AUDIOS_PREFIX`.
+ * — Sem `audio_url`: pasta do livro (`NONE`) ou Salmos em PS1–PS5 quando há vários MP3 na pasta do livro.
  */
 export function getAudiosChapterRootDirectoryPath(
   track: { audio_url: string | null; psalms_group: string | null },
@@ -191,7 +191,7 @@ export function getAudiosChapterRootDirectoryPath(
     return null;
   }
   const grp = (track.psalms_group ?? "NONE").trim().toUpperCase();
-  if (grp !== "NONE") return null;
+  if (grp !== "NONE" && !/^PS[1-5]$/.test(grp)) return null;
   return getAudiosBookDirectoryPath(track, book);
 }
 
@@ -361,7 +361,7 @@ export async function resolveAudiosPlaybackUrl(
     if (ch.length > 1) {
       if (slugName) {
         const needle = slugName.toLowerCase();
-        const hit = ch.find((f) => f.name.toLowerCase() === needle);
+        const hit = ch.find((f) => f.fileName.toLowerCase() === needle);
         if (hit) {
           const objectPath = `${chapterRootEarly}/${hit.name}`;
           const { data } = supabase.storage.from(bucket).getPublicUrl(objectPath);
