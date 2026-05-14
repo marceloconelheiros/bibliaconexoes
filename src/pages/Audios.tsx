@@ -33,9 +33,9 @@ function audioStorageFailureToast(
     return `${head} Verifica se o URL usa /storage/v1/object/… e não /rest/v1/object/… (este último exige chave). Na Vercel, confere VITE_PUBLIC_AUDIO_BASE_URL e na tabela audio_url.`;
   }
   if (/not\s*found|nosuchkey|object\s+not\s+found/i.test(apiMsg ?? "")) {
-    return `${head} O ficheiro não está no Storage deste projeto (bucket «${bucket}» está vazio ou o nome não coincide). Envie ${nome} na raiz, sem pasta — ou define audio_url no registo da faixa.`;
+    return `${head} O ficheiro não existe nesse caminho no Storage (bucket «${bucket}»). Caminho esperado (relativo ao bucket): ${nome}. Confirma pastas OT/NT e a variável VITE_SUPABASE_AUDIOS_PREFIX na Vercel, ou define audio_url na faixa.`;
   }
-  return `${head} Envie ${nome} na raiz do bucket «${bucket}» (público) ou preencha audio_url nesta faixa.`;
+  return `${head} Usa no bucket «${bucket}» o caminho ${nome} — ou preenche audio_url nesta faixa.`;
 }
 
 interface ChapterTimestamp {
@@ -314,7 +314,9 @@ const Audios = () => {
                   aplique as migrações (por exemplo{" "}
                   <code className="text-xs">20260509140000_seed_books_and_audio_tracks.sql</code>) ou rode{" "}
                   <code className="text-xs">supabase db push</code>. Depois, envie os MP3 ao bucket público{" "}
-                  <code className="text-xs">audios</code> na raiz (ex.:{" "}
+                  <code className="text-xs">audios</code> no caminho esperado (raiz ou{" "}
+                  <code className="text-xs">VITE_SUPABASE_AUDIOS_PREFIX</code> + OT/NT — ver{" "}
+                  <code className="text-xs">.env.example</code>) — ex.:{" "}
                   <code className="text-xs">Gn.mp3</code>, <code className="text-xs">Ex.mp3</code> para Êxodo,{" "}
                   <code className="text-xs">Sl_PS1.mp3</code>, etc.).
                 </p>

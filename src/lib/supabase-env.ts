@@ -25,3 +25,24 @@ export function getAudiosBucketId(): string {
   const id = (import.meta.env.VITE_SUPABASE_AUDIOS_BUCKET ?? "").trim();
   return id || "audios";
 }
+
+/**
+ * Caminho dentro do bucket antes da pasta do testamento e do ficheiro.
+ * Ex.: `files/audio/biblia` (sem barra inicial/final). Vazio = ficheiros na raiz do bucket.
+ */
+export function getAudiosObjectPrefixPath(): string {
+  const p = (import.meta.env.VITE_SUPABASE_AUDIOS_PREFIX ?? "").trim();
+  if (!p) return "";
+  return p.replace(/^\/+|\/+$/g, "").replace(/\/{2,}/g, "/");
+}
+
+/**
+ * Nome da pasta de testamento dentro do prefixo (livros `books.testament`: OT / NT).
+ * Por defeito coincide com pastas em português no Storage.
+ */
+export function getAudiosTestamentFolder(testament: string | null | undefined): string {
+  const t = (testament ?? "").trim().toUpperCase();
+  const nt = (import.meta.env.VITE_SUPABASE_AUDIOS_FOLDER_NT ?? "").trim() || "Novo Testamento";
+  const ot = (import.meta.env.VITE_SUPABASE_AUDIOS_FOLDER_OT ?? "").trim() || "Velho Testamento";
+  return t === "NT" ? nt : ot;
+}

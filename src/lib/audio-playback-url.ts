@@ -2,16 +2,16 @@
  * Resolve URL de reprodução dos áudios.
  *
  * 1) `audio_tracks.audio_url` quando preenchido.
- * 2) Caso contrário: objeto na raiz do bucket Storage **audios**, nome
- *    `{slug}.mp3` ou `{slug}_{PS1…}.mp3` (Salmos). O `slug` é o abbrev do livro
- *    sem diacríticos (ex.: Êx→Ex), para obedecer às regras de chave do Storage
- *    e coincidir com ficheiros típicos em ASCII. Usa `getPublicUrl` do SDK.
+ * 2) Caso contrário: objeto no bucket Storage (id em `VITE_SUPABASE_AUDIOS_BUCKET`, por defeito audios).
+ *    Caminho relativo: opcionalmente `VITE_SUPABASE_AUDIOS_PREFIX` + pasta OT/NT + `{slug}.mp3`
+ *    ou `{slug}_{PS1…}.mp3` (Salmos). Sem prefixo = ficheiro na raiz do bucket.
  */
 import { supabase } from "@/integrations/supabase/client";
-import { getAudiosBucketId } from "@/lib/supabase-env";
+import { getAudiosBucketId, getAudiosObjectPrefixPath, getAudiosTestamentFolder } from "@/lib/supabase-env";
 
 export type BookForAudio = {
   abbrev: string;
+  testament?: string | null;
 };
 
 /** Colisões após remover marcas: «Jó» viraria «Jo», igual ao abbrev de João. */
@@ -38,7 +38,16 @@ function psalmsGroupFileSuffix(raw: string | null | undefined): string | null {
   return /^PS[1-5]$/.test(s) ? s : null;
 }
 
-/** Caminho do objeto dentro do bucket `audios` (ex.: `Gn.mp3`, `Ex.mp3`, `Sl_PS1.mp3`). */
+/** Codifica cada segmento do caminho do objeto (pastas com espaços, etc.). */
+function encodeStorageObjectPath(path: string): string {
+  return path
+    .split("/")
+    .filter(Boolean)
+    .map((seg) => encodeURIComponent(seg))
+    .join("/");
+}
+
+/** Caminho do objeto dentro do bucket (ex.: `Gn.mp3` ou `files/audio/biblia/Velho Testamento/Gn.mp3`). */
 export function getAudiosObjectPath(
   track: { psalms_group: string | null },
   book?: BookForAudio,
@@ -48,10 +57,13 @@ export function getAudiosObjectPath(
   slug = slug.replace(/[^A-Za-z0-9]/g, "");
   if (!slug) return null;
   const group = psalmsGroupFileSuffix(track.psalms_group);
-  if (group) {
-    return `${slug}_${group}.mp3`;
-  }
-  return `${slug}.mp3`;
+  const filename = group ? `${slug}_${group}.mp3` : `${slug}.mp3`;
+
+  const prefix = getAudiosObjectPrefixPath();
+  if (!prefix) return filename;
+
+  const testamentFolder = getAudiosTestamentFolder(book.testament);
+  return `${prefix}/${testamentFolder}/${filename}`;
 }
 
 /** Storage público: `/storage/v1/object/...`. `/rest/v1/object/...` é erro comum e devolve 401 «No API key». */
@@ -72,7 +84,7 @@ export function getAudioPlaybackUrl(
   const explicitRaw = (import.meta.env.VITE_PUBLIC_AUDIO_BASE_URL ?? "").trim().replace(/\/$/, "");
   if (explicitRaw) {
     const explicit = fixSupabaseStoragePublicUrl(explicitRaw);
-    return fixSupabaseStoragePublicUrl(`${explicit}/${encodeURIComponent(path)}`);
+    return fixSupabaseStoragePublicUrl(`${explicit}/${encodeStorageObjectPath(path)}`);
   }
 
   const bucket = getAudiosBucketId();
