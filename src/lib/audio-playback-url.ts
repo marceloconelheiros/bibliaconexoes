@@ -134,12 +134,159 @@ export function fixSupabaseStoragePublicUrl(url: string): string {
   return url.trim().replace(/\/rest\/v1\/object\//gi, "/storage/v1/object/");
 }
 
+/** Extensões de áudio tratadas como ficheiro único na pasta (não «pasta só com capítulos»). */
+export function looksLikeAudioFilename(segment: string): boolean {
+  return /\.(mp3|m4a|aac|ogg|wav|opus|webm)$/i.test(segment.trim());
+}
+
+/** Último segmento não é nome de ficheiro de áudio → trata-se como pasta (ex.: …/Genesis). */
+export function isChapterFolderBucketPath(bucketRelativePath: string): boolean {
+  const seg = bucketRelativePath.split("/").filter(Boolean).pop() ?? "";
+  return seg !== "" && !looksLikeAudioFilename(seg);
+}
+
+/** Caminho do objecto dentro do bucket a partir de `audio_url` (path relativo ou URL pública). */
+export function bucketPathFromDirectAudioInput(raw: string | null | undefined): string | null {
+  const t = sanitizeEnvPlainValue(raw ?? "").trim();
+  if (!t) return null;
+  if (/^https?:\/\//i.test(t)) {
+    return bucketObjectPathFromPublicUrl(t);
+  }
+  const segments = t
+    .split("/")
+    .map((s) => sanitizeEnvPlainValue(s).trim())
+    .filter(Boolean);
+  const path = stripLeadingAudiosNoiseSegments(segments).join("/");
+  return path || null;
+}
+
+/** Extrai «Biblia/…» a partir da URL pública do Storage. */
+export function bucketObjectPathFromPublicUrl(url: string, bucketId?: string): string | null {
+  const b = bucketId ?? getAudiosBucketId();
+  const u = fixSupabaseStoragePublicUrl(url.trim());
+  const needle = `/object/public/${b}/`;
+  const idx = u.indexOf(needle);
+  if (idx === -1) return null;
+  let rest = u.slice(idx + needle.length).split("?")[0];
+  try {
+    return decodeURIComponent(rest).replace(/\/$/, "");
+  } catch {
+    return rest.replace(/\/$/, "");
+  }
+}
+
+/**
+ * Pasta no bucket onde estão MP3 por capítulo.
+ * — `audio_url` sem ficheiro (ex.: …/Genesis) → essa pasta.
+ * — Sem `audio_url`, faixa «normal» (não Salmos por grupo): pasta do livro com `VITE_SUPABASE_AUDIOS_PREFIX`.
+ */
+export function getAudiosChapterRootDirectoryPath(
+  track: { audio_url: string | null; psalms_group: string | null },
+  book?: BookForAudio,
+): string | null {
+  const direct = track.audio_url?.trim();
+  if (direct) {
+    const bp = bucketPathFromDirectAudioInput(direct);
+    if (bp && isChapterFolderBucketPath(bp)) return bp.replace(/\/+$/, "");
+    return null;
+  }
+  const grp = (track.psalms_group ?? "NONE").trim().toUpperCase();
+  if (grp !== "NONE") return null;
+  return getAudiosBookDirectoryPath(track, book);
+}
+
+export type ChapterMp3Item = {
+  /** Número do capítulo inferido do nome do ficheiro (ou ordem). */
+  chapter: number;
+  fileName: string;
+  objectPath: string;
+  publicUrl: string;
+};
+
+function guessChapterFromFilename(fileName: string, orderIndex: number): number {
+  const base = fileName.replace(/\.[^.]+$/i, "");
+  const lead = base.match(/^(\d{1,3})\b/);
+  if (lead) return parseInt(lead[1], 10);
+  const mid = base.match(/(?:^|[_\s.-])(?:cap|capitulo|chapter)\s*[_\s.-]*(\d{1,3})\b/i);
+  if (mid) return parseInt(mid[1], 10);
+  const tail = base.match(/(\d{1,3})\s*$/);
+  if (tail) return parseInt(tail[1], 10);
+  return orderIndex + 1;
+}
+
+/** Lista e ordena MP3 numa pasta do livro (um ficheiro por capítulo). */
+export async function listSortedChapterMp3ForDirectory(dir: string): Promise<ChapterMp3Item[]> {
+  const bucket = getAudiosBucketId();
+  const { data: entries, error } = await supabase.storage.from(bucket).list(dir.replace(/\/+$/, ""), {
+    limit: 1000,
+    sortBy: { column: "name", order: "asc" },
+  });
+  if (error) {
+    console.error("[Áudio] list capítulos", dir, error);
+    return [];
+  }
+  const mp3s = (entries ?? []).filter(
+    (e): e is { name: string } => !!e?.name && e.name.toLowerCase().endsWith(".mp3"),
+  );
+  const tagged = mp3s.map((e, i) => ({
+    fileName: e.name,
+    chapter: guessChapterFromFilename(e.name, i),
+    objectPath: `${dir.replace(/\/+$/, "")}/${e.name}`,
+  }));
+  tagged.sort(
+    (a, b) => a.chapter - b.chapter || a.fileName.localeCompare(b.fileName, undefined, { numeric: true }),
+  );
+  return tagged.map((x) => {
+    const { data } = supabase.storage.from(bucket).getPublicUrl(x.objectPath);
+    return {
+      chapter: x.chapter,
+      fileName: x.fileName,
+      objectPath: x.objectPath,
+      publicUrl: fixSupabaseStoragePublicUrl(data.publicUrl),
+    };
+  });
+}
+
+export function normalizeStorageAudioDirectValue(
+  raw: string | null | undefined,
+): { publicUrl: string; objectPath: string } | null {
+  const trimmed = sanitizeEnvPlainValue(raw ?? "").trim();
+  if (!trimmed) return null;
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return {
+      publicUrl: fixSupabaseStoragePublicUrl(trimmed),
+      objectPath: trimmed,
+    };
+  }
+
+  const segments = trimmed
+    .split("/")
+    .map((s) => sanitizeEnvPlainValue(s).trim())
+    .filter(Boolean);
+  const pathForBucket = stripLeadingAudiosNoiseSegments(segments).join("/");
+  if (!pathForBucket) return null;
+
+  const bucket = getAudiosBucketId();
+  const { data } = supabase.storage.from(bucket).getPublicUrl(pathForBucket);
+  return {
+    publicUrl: fixSupabaseStoragePublicUrl(data.publicUrl),
+    objectPath: pathForBucket,
+  };
+}
+
 export function getAudioPlaybackUrl(
   track: { audio_url: string | null; psalms_group: string | null },
   book?: BookForAudio,
 ): string | null {
   const direct = track.audio_url?.trim();
-  if (direct) return fixSupabaseStoragePublicUrl(direct);
+  if (direct) {
+    const bp = bucketPathFromDirectAudioInput(direct);
+    if (!bp || !isChapterFolderBucketPath(bp)) {
+      const n = normalizeStorageAudioDirectValue(direct);
+      if (n) return n.publicUrl;
+    }
+  }
 
   if (getAudiosFileMode() === "auto" && getAudiosObjectPrefixPath()) {
     return null;
@@ -172,8 +319,20 @@ export async function resolveAudiosPlaybackUrl(
 ): Promise<ResolvedAudiosPlayback | null> {
   const direct = track.audio_url?.trim();
   if (direct) {
-    const u = fixSupabaseStoragePublicUrl(direct);
-    return { publicUrl: u, objectPath: direct };
+    const bp = bucketPathFromDirectAudioInput(direct);
+    if (!bp || !isChapterFolderBucketPath(bp)) {
+      const n = normalizeStorageAudioDirectValue(direct);
+      if (n) return n;
+    }
+  }
+
+  const chapterRootEarly = getAudiosChapterRootDirectoryPath(track, book);
+  if (chapterRootEarly) {
+    const ch = await listSortedChapterMp3ForDirectory(chapterRootEarly);
+    if (ch.length > 1) return null;
+    if (ch.length === 1) {
+      return { publicUrl: ch[0].publicUrl, objectPath: ch[0].objectPath };
+    }
   }
 
   const bucket = getAudiosBucketId();
@@ -225,12 +384,13 @@ export async function resolveAudiosPlaybackUrl(
   };
 }
 
-/** Para UI: há caminho/base para tentar áudio (inclui modo auto + prefix). */
+/** Para UI: há caminho/base para tentar áudio (inclui modo por capítulo na pasta do livro). */
 export function audiosBuiltInPlaybackConfigured(
   track: { audio_url: string | null; psalms_group: string | null },
   book?: BookForAudio,
 ): boolean {
   if (track.audio_url?.trim()) return true;
+  if (getAudiosChapterRootDirectoryPath(track, book)) return true;
   if (!book?.abbrev?.trim()) return false;
   if (getAudiosObjectPrefixPath()) {
     return !!(book.name?.trim() && getAudiosBookDirectoryPath(track, book));
