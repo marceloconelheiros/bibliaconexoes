@@ -705,40 +705,9 @@ const Audios = () => {
                                   onClick={() => openChapterBoard()}
                                   disabled={!book || !showChapterBoard}
                                 >
-                                  <div className="text-lg">
-                                    <span>{book?.name || track.title}</span>
-                                    {book != null && book.chapters_count > 0 ? (
-                                      <span className="text-muted-foreground font-normal">
-                                        {" "}
-                                        ({book.chapters_count} cap.)
-                                      </span>
-                                    ) : null}
-                                  </div>
+                                  <div className="text-lg">{book?.name || track.title}</div>
                                   {track.psalms_group !== "NONE" && (
                                     <div className="text-sm font-normal text-muted-foreground">{track.title}</div>
-                                  )}
-                                  {showChapterBoard && book && (
-                                    <div className="text-xs font-normal text-muted-foreground mt-1">
-                                      {pathsInDb > 0 ? (
-                                        <span>
-                                          {pathsInDb} registo{pathsInDb !== 1 ? "s" : ""} em{" "}
-                                          <code className="text-[10px]">audio_track_chapter_sources</code>
-                                        </span>
-                                      ) : (
-                                        <span>Sem URLs por capítulo na BD — usa a tabela para apontar a cada MP3.</span>
-                                      )}
-                                      {chapterRoot ? (
-                                        chapterLoadingTrackId === track.id ? (
-                                          <span className="block mt-1">A ler lista de ficheiros no Storage…</span>
-                                        ) : (
-                                          <span className="block mt-1">
-                                            Pasta no Storage — {chapterCache.get(track.id)?.length ?? 0} .mp3
-                                            detectado{(chapterCache.get(track.id)?.length ?? 0) !== 1 ? "s" : ""}.
-                                          </span>
-                                        )
-                                      ) : null}
-                                      <span className="block mt-0.5">Toca aqui ou na seta para abrir os capítulos.</span>
-                                    </div>
                                   )}
                                 </button>
                               </div>
@@ -789,12 +758,6 @@ const Audios = () => {
                                   );
                                 })}
                               </div>
-                              <p className="text-[11px] text-muted-foreground leading-snug pt-2">
-                                Desativa ou deixa em branco{" "}
-                                <code className="text-[10px]">audio_url</code> apenas com pasta; preenche{" "}
-                                <code className="text-[10px] mx-1">object_path_or_url</code> cada linha até ao ficheiro
-                                (.mp3). Ex.: Biblia/Velho Testamento/Genesis/01.mp3
-                              </p>
                             </CardContent>
                           )}
 
