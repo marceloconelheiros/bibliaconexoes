@@ -11,6 +11,7 @@ import {
   getAudiosFileMode,
   getAudiosObjectPrefixPath,
   sanitizeEnvPlainValue,
+  stripLeadingAudiosNoiseSegments,
 } from "@/lib/supabase-env";
 
 export type BookForAudio = {
@@ -26,6 +27,18 @@ const STORAGE_ABBREV_OVERRIDE: Record<string, string> = {
   Jó: "Job",
 };
 
+/**
+ * Pasta exacta no bucket `…/Biblia/{Testamento}/` quando o nome PT na BD não coincide
+ * com os nomes das pastas no Supabase (ASCII, sem acentos, ex.: Cantares de Salomao).
+ */
+const STORAGE_BOOK_FOLDER_PT: Record<string, string> = {
+  "Cântico dos Cânticos": "Cantares de Salomao",
+};
+
+function asciiFoldPortuguese(text: string): string {
+  return text.normalize("NFD").replace(/\p{M}/gu, "").trim();
+}
+
 export function abbrevToAudiosStorageSlug(abbrev: string): string {
   const t = abbrev.trim();
   if (!t) return t;
@@ -34,11 +47,31 @@ export function abbrevToAudiosStorageSlug(abbrev: string): string {
   return t.normalize("NFD").replace(/\p{M}/gu, "");
 }
 
-/** Pasta do livro no bucket: `books.audio_folder` ou nome sem marcas diacríticas. */
+/** Pasta do livro no bucket: `books.audio_folder` (sanitizado) ou nome alinhado ao Storage. */
 export function bookStorageFolder(book: Pick<BookForAudio, "name" | "audio_folder">): string {
-  const manual = book.audio_folder?.trim();
-  if (manual) return manual;
-  return book.name.normalize("NFD").replace(/\p{M}/gu, "").trim();
+  const rawManual = book.audio_folder?.trim();
+  if (rawManual) {
+    let manual = sanitizeEnvPlainValue(rawManual).trim();
+    let parts = stripLeadingAudiosNoiseSegments(
+      manual
+        .split("/")
+        .map((x) => sanitizeEnvPlainValue(x).trim())
+        .filter(Boolean),
+    );
+
+    if (parts[0]?.toLowerCase() === "biblia" && parts.length > 1) {
+      parts = parts.slice(1);
+    }
+    parts = parts.filter((s) => s !== "Velho Testamento" && s !== "Novo Testamento");
+
+    manual = parts.join("/").trim();
+    if (/^[A-Za-z_][\w]+\s*=/.test(manual)) manual = "";
+    if (manual) return manual;
+  }
+
+  const nameKey = book.name.trim();
+  if (STORAGE_BOOK_FOLDER_PT[nameKey]) return STORAGE_BOOK_FOLDER_PT[nameKey];
+  return asciiFoldPortuguese(nameKey);
 }
 
 function psalmsGroupFileSuffix(raw: string | null | undefined): string | null {

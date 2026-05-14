@@ -21,21 +21,44 @@ export function isSupabaseEnvReady(): boolean {
 }
 
 /**
- * Remove aspas e `VAR=value` só no **início** da string (valor único no campo).
+ * Remove aspas e `VAR=value` **repetido** no início (valor colado tipo Vercel/`.env`).
+ * Aceita tanto `VAR=…` tipo `VITE_*` como outras variáveis em CAPS snake case.
  */
 export function sanitizeEnvPlainValue(raw: string | undefined): string {
   if (raw == null) return "";
   let t = raw.trim().replace(/^["']|["']$/g, "");
-  t = t.replace(/^VITE_[A-Z0-9_]+\s*=\s*/i, "").trim();
+  for (let i = 0; i < 5; i++) {
+    const prev = t;
+    t = t.replace(/^VITE_[A-Z0-9_]+\s*=\s*/i, "").trim();
+    // `NOME=value` quando alguém cola o valor errado inteiro na Vercel
+    t = t.replace(/^[A-Z][A-Z0-9_]{2,}\s*=\s*/, "").trim();
+    if (t === prev) break;
+    t = t.replace(/^["']|["']$/g, "").trim();
+  }
   return t.replace(/^["']|["']$/g, "");
+}
+
+/** Igual ao filtro del prefix «Biblia» — remove `file/audios`/bucket errados no arranque. */
+export function stripLeadingAudiosNoiseSegments(parts: string[]): string[] {
+  let segments = [...parts];
+  while (
+    segments.length >= 2 &&
+    segments[0].toLowerCase() === "file" &&
+    segments[1].toLowerCase() === "audios"
+  ) {
+    segments = segments.slice(2);
+  }
+  while (segments.length >= 1 && segments[0].toLowerCase() === "audios") {
+    segments = segments.slice(1);
+  }
+  return segments.filter((x) => x !== "");
 }
 
 /** Segmento de prefixo inválido (outra variável colada ou nome=valor). */
 function cleanAudiosPrefixSegment(seg: string): string | null {
-  const s = seg.trim();
+  const s = sanitizeEnvPlainValue(seg).trim();
   if (!s) return null;
-  if (/^VITE_[A-Z0-9_]+\s*=/i.test(s)) return null;
-  if (/^[A-Z][A-Z0-9_]{2,}\s*=/i.test(s)) return null;
+  if (/^[A-Za-z_][\w]+\s*=/.test(s)) return null;
   return s;
 }
 
@@ -59,16 +82,8 @@ export function getAudiosObjectPrefixPath(): string {
     .map((seg) => cleanAudiosPrefixSegment(seg))
     .filter((x): x is string => x != null && x.length > 0);
 
-  while (
-    segments.length >= 2 &&
-    segments[0].toLowerCase() === "file" &&
-    segments[1].toLowerCase() === "audios"
-  ) {
-    segments = segments.slice(2);
-  }
-  while (segments.length >= 1 && segments[0].toLowerCase() === "audios") {
-    segments = segments.slice(1);
-  }
+  segments = stripLeadingAudiosNoiseSegments(segments);
+  segments = segments.filter((s) => s !== "Velho Testamento" && s !== "Novo Testamento");
 
   return segments.join("/").replace(/\/{2,}/g, "/");
 }
