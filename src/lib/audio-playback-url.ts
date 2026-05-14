@@ -204,7 +204,7 @@ export type ChapterMp3Item = {
 };
 
 function guessChapterFromFilename(fileName: string, orderIndex: number): number {
-  const base = fileName.replace(/\.[^.]+$/i, "");
+  const base = fileName.replace(/\.[^.]+$/i, "").trim();
   const lead = base.match(/^(\d{1,3})\b/);
   if (lead) return parseInt(lead[1], 10);
   const mid = base.match(/(?:^|[_\s.-])(?:cap|capitulo|chapter)\s*[_\s.-]*(\d{1,3})\b/i);
@@ -212,6 +212,32 @@ function guessChapterFromFilename(fileName: string, orderIndex: number): number 
   const tail = base.match(/(\d{1,3})\s*$/);
   if (tail) return parseInt(tail[1], 10);
   return orderIndex + 1;
+}
+
+/**
+ * Liga o número lógico do capítulo ao MP3 da lista (ex.: `9.mp3`, `09.mp3`, `Gn09.mp3`).
+ * Evita falhas só nos capítulos 1–9 quando o nome no Storage não coincide com `chapter` inferido.
+ */
+export function pickChapterMp3ForNumber(items: ChapterMp3Item[], chapterNum: number): ChapterMp3Item | undefined {
+  const exact = items.find((x) => x.chapter === chapterNum);
+  if (exact) return exact;
+
+  const s = String(chapterNum);
+  const pad2 = s.padStart(2, "0");
+  const pad3 = s.padStart(3, "0");
+
+  return items.find((item) => {
+    const base = item.fileName.replace(/\.[^.]+$/i, "").trim();
+    if (base === s || base === pad2 || base === pad3) return true;
+
+    const numericOnly = base.match(/^0*(\d{1,3})$/);
+    if (numericOnly && parseInt(numericOnly[1], 10) === chapterNum) return true;
+
+    const tail = base.match(/(\d{1,3})$/);
+    if (tail && parseInt(tail[1], 10) === chapterNum) return true;
+
+    return false;
+  });
 }
 
 /** Lista e ordena MP3 numa pasta do livro (um ficheiro por capítulo). */
@@ -229,7 +255,7 @@ export async function listSortedChapterMp3ForDirectory(dir: string): Promise<Cha
     (e): e is { name: string } => !!e?.name && e.name.toLowerCase().endsWith(".mp3"),
   );
   const tagged = mp3s.map((e, i) => ({
-    fileName: e.name,
+    fileName: e.name.normalize("NFC").trim(),
     chapter: guessChapterFromFilename(e.name, i),
     objectPath: `${dir.replace(/\/+$/, "")}/${e.name}`,
   }));
@@ -326,20 +352,35 @@ export async function resolveAudiosPlaybackUrl(
     }
   }
 
+  const bucket = getAudiosBucketId();
+  const slugName = getAudiosSlugFilename(track, book);
+
   const chapterRootEarly = getAudiosChapterRootDirectoryPath(track, book);
   if (chapterRootEarly) {
     const ch = await listSortedChapterMp3ForDirectory(chapterRootEarly);
-    if (ch.length > 1) return null;
+    if (ch.length > 1) {
+      if (slugName) {
+        const needle = slugName.toLowerCase();
+        const hit = ch.find((f) => f.name.toLowerCase() === needle);
+        if (hit) {
+          const objectPath = `${chapterRootEarly}/${hit.name}`;
+          const { data } = supabase.storage.from(bucket).getPublicUrl(objectPath);
+          return {
+            publicUrl: fixSupabaseStoragePublicUrl(data.publicUrl),
+            objectPath,
+          };
+        }
+      }
+      return null;
+    }
     if (ch.length === 1) {
       return { publicUrl: ch[0].publicUrl, objectPath: ch[0].objectPath };
     }
   }
 
-  const bucket = getAudiosBucketId();
   const explicitRaw = sanitizeEnvPlainValue(import.meta.env.VITE_PUBLIC_AUDIO_BASE_URL ?? "").replace(/\/$/, "");
 
   const slugPath = getAudiosObjectPath(track, book);
-  const slugName = getAudiosSlugFilename(track, book);
 
   const useAuto = getAudiosFileMode() === "auto" && !!getAudiosObjectPrefixPath();
   const dir = getAudiosBookDirectoryPath(track, book);

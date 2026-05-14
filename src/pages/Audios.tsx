@@ -14,6 +14,7 @@ import {
   getAudiosObjectPath,
   listSortedChapterMp3ForDirectory,
   normalizeStorageAudioDirectValue,
+  pickChapterMp3ForNumber,
   resolveAudiosPlaybackUrl,
 } from "@/lib/audio-playback-url";
 import { getAudiosBucketId } from "@/lib/supabase-env";
@@ -240,14 +241,15 @@ const Audios = () => {
     track: AudioTrack,
     storageList: ChapterMp3Item[],
   ): ChapterPlaybackItem | null => {
+    const st = pickChapterMp3ForNumber(storageList, chapterNum);
+    if (st) return { chapter: chapterNum, publicUrl: st.publicUrl, objectPath: st.objectPath };
+
     const dbMap = chapterDbByTrack.get(track.id);
     const raw = dbMap?.get(chapterNum)?.trim();
     if (raw) {
       const n = normalizeStorageAudioDirectValue(raw);
       if (n) return { chapter: chapterNum, publicUrl: n.publicUrl, objectPath: n.objectPath };
     }
-    const st = storageList.find((x) => x.chapter === chapterNum);
-    if (st) return { chapter: chapterNum, publicUrl: st.publicUrl, objectPath: st.objectPath };
     return null;
   };
 
