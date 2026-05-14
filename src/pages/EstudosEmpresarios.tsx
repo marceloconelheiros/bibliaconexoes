@@ -56,9 +56,17 @@ const EstudosEmpresarios = () => {
                     variant="secondary"
                     size="sm"
                     className="gap-2"
-                    onClick={() =>
-                      navigate(`/biblia?livro=${encodeURIComponent(study.bookAbbrev)}&cap=${study.chapter}`)
-                    }
+                    onClick={() => {
+                      try {
+                        const raw = localStorage.getItem("bc_exec_study_opened") || "{}";
+                        const o = JSON.parse(raw) as Record<string, number>;
+                        o[study.id] = (o[study.id] ?? 0) + 1;
+                        localStorage.setItem("bc_exec_study_opened", JSON.stringify(o));
+                      } catch {
+                        /* ignore */
+                      }
+                      navigate(`/biblia?livro=${encodeURIComponent(study.bookAbbrev)}&cap=${study.chapter}`);
+                    }}
                   >
                     Abrir na Bíblia
                   </Button>

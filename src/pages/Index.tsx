@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,10 +20,12 @@ import { useProfileAvatarUrl } from "@/hooks/useProfileAvatarUrl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BRAND } from "@/lib/brand";
 import { cn } from "@/lib/utils";
+import { computeHubCoreMetrics, hubProgressBars, type HubCoreMetrics } from "@/lib/home-hub-metrics";
 
 type HubItem = {
   icon: LucideIcon;
   title: string;
+  category: string;
   description: string;
   path: string;
 };
@@ -32,35 +34,68 @@ const HUB_ITEMS: HubItem[] = [
   {
     icon: Volume2,
     title: "Bíblia em áudio",
-    description: "Ouça com clareza em qualquer lugar — foco e reverência no texto.",
+    category: "Escuta",
+    description: "Ouça com clareza — foco e reverência no texto.",
     path: "/audios",
   },
   {
     icon: BookOpen,
     title: "Bíblia para líderes",
-    description: "Texto integral com reflexões de gestão e ética nos capítulos marcados.",
+    category: "Leitura",
+    description: "Texto integral com reflexões nos capítulos marcados.",
     path: "/biblia",
   },
   {
     icon: BriefcaseBusiness,
     title: "Estudos para empresários",
-    description: "Leituras curtas que cruzam Escritura com decisão e integridade.",
+    category: "Desenvolvimento",
+    description: "Escritura cruzada com gestão e integridade.",
     path: "/estudos-empresarios",
   },
   {
     icon: CalendarCheck,
     title: "Planejador de leitura",
-    description: "Monte seu ritmo — 15 dias a um ano — e acompanhe o progresso.",
+    category: "Hábito",
+    description: "Monte seu ritmo e acompanhe o progresso.",
     path: "/meus-planos",
   },
 ];
 
-const HIGHLIGHTS: { icon: LucideIcon; label: string; detail: string }[] = [
-  { icon: Volume2, label: "Áudio", detail: "narração estável e navegação por capítulo" },
-  { icon: BookOpen, label: "Reflexão", detail: "insights para o dia a dia corporativo" },
-  { icon: BriefcaseBusiness, label: "Estudos", detail: "lista curada com link direto" },
-  { icon: CalendarCheck, label: "Planos", detail: "ritmo sob medida para você" },
-];
+function greetingPtBR(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Bom dia";
+  if (h < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
+function ThinProgressBar({
+  label,
+  value,
+  variant,
+}: {
+  label: string;
+  value: number;
+  variant: "lightOnDark" | "darkOnLight";
+}) {
+  const fill =
+    variant === "lightOnDark"
+      ? "bg-[#93c5fd]"
+      : "bg-[linear-gradient(90deg,#1e5a96,#2563eb)] dark:bg-[#60a5fa]";
+  const track =
+    variant === "lightOnDark" ? "bg-white/15" : "bg-[#0f2747]/[0.08] dark:bg-white/15";
+
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between text-[10px] font-medium uppercase tracking-wide opacity-90">
+        <span>{label}</span>
+        <span>{Math.round(value)}%</span>
+      </div>
+      <div className={cn("h-1.5 w-full overflow-hidden rounded-full", track)} role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={100}>
+        <div className={cn("h-full rounded-full transition-[width] duration-500 ease-out", fill)} style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
+      </div>
+    </div>
+  );
+}
 
 const Index = () => {
   const navigate = useNavigate();
@@ -68,6 +103,15 @@ const Index = () => {
   const { session } = useAuth();
   const avatarUrl = useProfileAvatarUrl(session?.user.id);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [coreMetrics, setCoreMetrics] = useState<HubCoreMetrics>(() => computeHubCoreMetrics());
+
+  const displayName = useMemo(() => {
+    const meta = session?.user?.user_metadata as { full_name?: string } | undefined;
+    const fn = meta?.full_name?.trim();
+    if (fn) return fn.split(/\s+/)[0];
+    const em = session?.user?.email?.split("@")[0];
+    return em || "";
+  }, [session]);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -76,6 +120,17 @@ const Index = () => {
     };
     window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => setCoreMetrics(computeHubCoreMetrics());
+    refresh();
+    window.addEventListener("storage", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("focus", refresh);
+    };
   }, []);
 
   const handleInstall = async () => {
@@ -91,71 +146,53 @@ const Index = () => {
     }
   };
 
-  const hubCardClass =
-    "group relative cursor-pointer rounded-lg border border-border/70 bg-card/75 shadow-[0_1px_0_0_hsl(var(--border)/0.55)] backdrop-blur-md transition-all duration-300 hover:border-primary/40 hover:bg-card hover:shadow-[0_12px_40px_-12px_hsl(var(--primary)/0.18)] dark:border-border/50 dark:bg-card/40 dark:hover:bg-card/55";
-
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Ambiente visual discreto */}
-      <div
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--muted)/0.35)_45%,hsl(var(--background))_100%)]"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_85%_55%_at_50%_-15%,hsl(var(--primary)/0.14),transparent_55%)]"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute right-[-20%] top-1/3 h-[420px] w-[420px] rounded-full bg-primary/[0.06] blur-3xl dark:bg-primary/[0.08]"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute left-[-15%] bottom-0 h-[320px] w-[320px] rounded-full bg-slate-500/[0.07] blur-3xl dark:bg-slate-400/[0.05]"
-        aria-hidden
-      />
+    <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(165deg,#f5f9fd_0%,#e8f1fb_42%,#dceaf7_100%)] text-[#0f2747] dark:bg-[linear-gradient(165deg,#0c1629_0%,#111d33_45%,#152642_100%)] dark:text-[#e8f2fc]">
+      {/* Logo integrado ao fundo (sem “caixa”) */}
+      <div className="pointer-events-none absolute left-1/2 top-[2%] z-0 w-[min(120vw,680px)] -translate-x-1/2 select-none opacity-[0.065] dark:opacity-[0.09]" aria-hidden>
+        <img src="/logo.png" alt="" className="mx-auto h-auto w-full max-w-none scale-110 object-contain blur-[0.5px] saturate-150 dark:saturate-100" />
+      </div>
 
-      <div className="relative mx-auto max-w-5xl px-4 pb-16 pt-10 md:px-6 md:pb-20 md:pt-12">
-        {/* Topo */}
-        <header className="mb-14 flex animate-fade-in items-start justify-between gap-6 border-b border-border/50 pb-8 md:mb-16 md:items-center">
-          <div className="flex min-w-0 items-center gap-4">
-            <img
-              src="/logo.png"
-              alt={BRAND.name}
-              className="h-14 w-14 shrink-0 rounded-lg object-cover shadow-md ring-1 ring-border/60 md:h-16 md:w-16"
-            />
-            <div className="min-w-0">
-              <p className="font-display text-xl font-semibold tracking-tight text-foreground md:text-2xl">{BRAND.name}</p>
-              <p className="mt-1 max-w-md text-[11px] font-medium uppercase leading-snug tracking-[0.18em] text-primary md:text-xs">
-                {BRAND.tagline}
-              </p>
-            </div>
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_90%_-10%,rgba(37,99,235,0.11),transparent_55%)] dark:bg-[radial-gradient(ellipse_70%_45%_at_90%_-10%,rgba(59,130,246,0.14),transparent_50%)]" aria-hidden />
+      <div className="pointer-events-none absolute bottom-[-18%] left-[-12%] h-[340px] w-[340px] rounded-full bg-[#2563eb]/[0.06] blur-3xl dark:bg-[#3b82f6]/10" aria-hidden />
+      <div className="pointer-events-none absolute bottom-[12%] right-[-8%] h-[260px] w-[260px] rounded-full bg-[#0f2747]/[0.05] blur-3xl dark:bg-[#93c5fd]/[0.07]" aria-hidden />
+
+      <div className="relative z-[1] mx-auto max-w-5xl px-4 pb-20 pt-8 md:px-6 md:pb-24 md:pt-10">
+        <header className="mb-10 flex animate-fade-in items-start justify-between gap-4 md:mb-12 md:items-center">
+          <div className="min-w-0 flex-1 pt-1">
+            <p className="text-[13px] font-semibold leading-snug text-[#1e5a96] dark:text-[#93c5fd] md:text-sm">
+              {greetingPtBR()}
+              {displayName ? `, ${displayName}!` : "!"}
+            </p>
+            <h1 className="font-display mt-1 text-lg font-bold tracking-tight text-[#0f2747] dark:text-white md:text-xl">{BRAND.name}</h1>
+            <p className="mt-1 max-w-md text-[11px] font-medium uppercase tracking-[0.16em] text-[#5c7a9e] dark:text-[#94a8c4]">{BRAND.tagline}</p>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2 rounded-full bg-white/70 px-1 py-1 shadow-sm shadow-[#0f2747]/5 backdrop-blur-md dark:bg-[#152642]/80 dark:shadow-black/30">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="hidden gap-2 border-border/80 bg-background/80 pr-3 backdrop-blur-sm sm:inline-flex"
+              className="hidden gap-2 rounded-full px-3 text-[#0f2747] hover:bg-[#e8f1fb] dark:text-[#e8f2fc] dark:hover:bg-white/10 sm:inline-flex"
               onClick={() => navigate("/perfil")}
             >
-              <Avatar className="h-8 w-8 border border-border/60 shadow-sm">
+              <Avatar className="h-8 w-8 border border-[#cfe0f5] shadow-sm dark:border-white/15">
                 <AvatarImage src={avatarUrl ?? undefined} alt="" />
-                <AvatarFallback className="rounded-full bg-muted">
-                  <User className="h-4 w-4 text-muted-foreground" />
+                <AvatarFallback className="rounded-full bg-[#e8f1fb] dark:bg-white/10">
+                  <User className="h-4 w-4 text-[#5c7a9e]" />
                 </AvatarFallback>
               </Avatar>
               Perfil
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
-              className="h-10 w-10 overflow-hidden rounded-full border-border/80 bg-background/80 p-0 backdrop-blur-sm sm:hidden"
+              className="h-10 w-10 rounded-full text-[#0f2747] hover:bg-[#e8f1fb] dark:text-[#e8f2fc] dark:hover:bg-white/10 sm:hidden"
               onClick={() => navigate("/perfil")}
               aria-label="Perfil"
             >
-              <Avatar className="h-full w-full border-0">
+              <Avatar className="h-9 w-9 border border-[#cfe0f5] dark:border-white/15">
                 <AvatarImage src={avatarUrl ?? undefined} alt="" />
-                <AvatarFallback className="rounded-full bg-muted">
-                  <User className="h-5 w-5 text-muted-foreground" />
+                <AvatarFallback className="rounded-full bg-[#e8f1fb] dark:bg-white/10">
+                  <User className="h-4 w-4" />
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -163,86 +200,121 @@ const Index = () => {
           </div>
         </header>
 
-        {/* Hero */}
-        <section className="mx-auto mb-16 max-w-3xl animate-fade-in text-center md:mb-20">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/[0.07] px-3 py-1.5 dark:bg-primary/[0.11]">
-            <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
-            <span className="text-xs font-medium tracking-wide text-primary md:text-sm">Fé nos negócios · decisões com propósito</span>
-          </div>
-          <h2 className="font-display text-[2rem] font-semibold leading-[1.15] tracking-tight text-foreground md:text-5xl md:leading-[1.1]">
-            Palavra para quem lidera
-          </h2>
-          <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-muted-foreground md:text-lg">
-            {BRAND.description}
-          </p>
-          <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Button
-              size="lg"
-              className="h-12 min-w-[220px] rounded-lg px-8 font-medium shadow-[0_1px_0_0_hsl(0_0%_100%/0.12)_inset] dark:shadow-[0_1px_0_0_hsl(0_0%_100%/0.06)_inset]"
-              onClick={handleInstall}
-            >
-              <Download className="h-5 w-5" />
-              Instalar no celular
-            </Button>
-            <Button variant="ghost" size="lg" className="h-12 rounded-lg text-muted-foreground hover:text-foreground" onClick={() => navigate("/biblia")}>
-              Abrir a Bíblia
-              <ChevronRight className="h-4 w-4 opacity-70" />
-            </Button>
+        {/* Banner tipo mockup */}
+        <section className="mx-auto mb-10 max-w-3xl animate-fade-in rounded-[22px] border border-[#c8dcf0]/80 bg-[linear-gradient(135deg,#dbeafe_0%,#eff6ff_55%,#ffffff_100%)] p-5 shadow-[0_18px_48px_-24px_rgba(15,39,71,0.35)] dark:border-white/10 dark:bg-[linear-gradient(135deg,#1a3358_0%,#152642_100%)] dark:shadow-black/40 md:mb-12 md:p-7">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between md:gap-8">
+            <div className="min-w-0 flex-1 space-y-3">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#93c5fd]/60 bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#1e5a96] dark:border-[#60a5fa]/35 dark:bg-white/10 dark:text-[#bfdbfe]">
+                <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                Fé nos negócios
+              </div>
+              <h2 className="font-display text-2xl font-bold leading-[1.15] tracking-tight text-[#0f2747] dark:text-white md:text-[2rem]">
+                Palavra para quem lidera
+              </h2>
+              <p className="max-w-xl text-sm leading-relaxed text-[#3d5a78] dark:text-[#b8cce8]">{BRAND.description}</p>
+            </div>
+            <div className="flex shrink-0 flex-col gap-2 md:items-end">
+              <Button
+                size="lg"
+                className="h-11 min-w-[200px] rounded-xl bg-[#0f2747] font-semibold text-white shadow-[0_12px_28px_-12px_rgba(15,39,71,0.55)] hover:bg-[#163557] dark:bg-[#2563eb] dark:hover:bg-[#1d4ed8]"
+                onClick={() => navigate("/biblia")}
+              >
+                Abrir a Bíblia
+                <ChevronRight className="ml-1 h-4 w-4 opacity-90" />
+              </Button>
+            </div>
           </div>
         </section>
 
-        {/* Grade principal */}
-        <section aria-label="Acesso rápido" className="mb-16 md:mb-20">
-          <div className="mb-8 flex flex-col gap-1 md:mb-10">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Acesso rápido</p>
-            <h3 className="font-display text-xl font-semibold text-foreground md:text-2xl">Tudo em um só lugar</h3>
+        {/* Cards principais */}
+        <section aria-label="Acesso rápido" className="mb-12 md:mb-14">
+          <div className="mb-6 flex flex-col gap-1 md:mb-8">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#5c7a9e] dark:text-[#8ca5c9]">Áreas</p>
+            <h3 className="font-display text-xl font-bold text-[#0f2747] dark:text-white md:text-2xl">Continue de onde parou</h3>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-5">
-            {HUB_ITEMS.map(({ icon: Icon, title, description, path }) => (
-              <Card key={path} className={cn("shadow-none", hubCardClass)} onClick={() => navigate(path)}>
-                <CardContent className="flex h-full flex-col gap-5 p-6 md:p-7">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/[0.09] text-primary ring-1 ring-primary/[0.14] transition-colors group-hover:bg-primary/[0.14] group-hover:ring-primary/25 dark:bg-primary/[0.12] dark:ring-primary/20">
-                      <Icon className="h-5 w-5" strokeWidth={1.75} />
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 xl:gap-6">
+            {HUB_ITEMS.map(({ icon: Icon, title, category, description, path }, idx) => {
+              const featured = idx === 1;
+              const bars = hubProgressBars(path, coreMetrics);
+
+              return (
+                <Card
+                  key={path}
+                  role="link"
+                  tabIndex={0}
+                  className={cn(
+                    "group cursor-pointer rounded-[22px] border-0 shadow-[0_14px_40px_-28px_rgba(15,39,71,0.45)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_-28px_rgba(15,39,71,0.5)] dark:shadow-black/50 dark:hover:shadow-black/60",
+                    featured
+                      ? "bg-[#0f2747] text-white ring-1 ring-white/10 dark:bg-[#152642]"
+                      : "border border-[#d4e6f7]/90 bg-white/92 backdrop-blur-sm dark:border-white/10 dark:bg-[#162d4f]/85",
+                  )}
+                  onClick={() => navigate(path)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      navigate(path);
+                    }
+                  }}
+                >
+                  <CardContent className="flex h-full flex-col gap-5 p-6 md:p-7">
+                    <div className="flex items-start gap-4">
+                      <div
+                        className={cn(
+                          "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
+                          featured ? "bg-white/12 text-[#bfdbfe]" : "bg-[#e8f1fb] text-[#1e5a96] dark:bg-white/10 dark:text-[#93c5fd]",
+                        )}
+                      >
+                        <Icon className="h-6 w-6" strokeWidth={1.65} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={cn(
+                            "text-[10px] font-bold uppercase tracking-[0.18em]",
+                            featured ? "text-[#93c5fd]/90" : "text-[#5c7a9e] dark:text-[#94a8c4]",
+                          )}
+                        >
+                          {category}
+                        </p>
+                        <h4 className={cn("font-display mt-1 text-lg font-bold leading-snug md:text-xl", featured ? "text-white" : "text-[#0f2747] dark:text-white")}>
+                          {title}
+                        </h4>
+                        <p className={cn("mt-2 text-sm leading-relaxed", featured ? "text-[#cbdaf0]" : "text-[#4d6888] dark:text-[#aec7e6]")}>{description}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <h4 className="font-display text-lg font-semibold leading-snug text-foreground">{title}</h4>
-                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+
+                    <div className={cn("space-y-3 rounded-xl px-1 py-1", featured ? "" : "")}>
+                      <ThinProgressBar label="Leitura" value={bars.reading} variant={featured ? "lightOnDark" : "darkOnLight"} />
+                      <ThinProgressBar label="Desenvolvimento" value={bars.formation} variant={featured ? "lightOnDark" : "darkOnLight"} />
                     </div>
-                  </div>
-                  <div className="mt-auto flex items-center gap-1 text-xs font-medium text-primary opacity-90 transition-opacity group-hover:opacity-100">
-                    <span>Entrar</span>
-                    <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+
+                    <div
+                      className={cn(
+                        "mt-auto flex items-center gap-1 text-xs font-semibold",
+                        featured ? "text-[#bfdbfe]" : "text-[#1e5a96] dark:text-[#93c5fd]",
+                      )}
+                    >
+                      <span>Entrar</span>
+                      <ChevronRight className="h-3.5 w-3.5 opacity-90 transition-transform group-hover:translate-x-0.5" />
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </section>
 
-        {/* Faixa de destaques — mesmo idioma visual */}
-        <section
-          aria-label="Destaques da experiência"
-          className="rounded-lg border border-border/60 bg-muted/25 px-5 py-8 backdrop-blur-sm dark:bg-muted/10 md:px-8 md:py-10"
-        >
-          <p className="mb-6 text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-            Experiência completa
-          </p>
-          <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {HIGHLIGHTS.map(({ icon: Icon, label, detail }) => (
-              <li key={label} className="flex gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-background/80 ring-1 ring-border/60 dark:bg-background/40">
-                  <Icon className="h-4 w-4 text-primary" strokeWidth={1.75} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground">{label}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{detail}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <footer className="flex flex-col items-center justify-between gap-4 border-t border-[#c8dcf0]/70 pt-8 dark:border-white/10 sm:flex-row">
+          <p className="text-center text-[11px] text-[#5c7a9e] dark:text-[#8ca5c9]">Os níveis refletem o uso neste dispositivo (planos, áudio e estudos).</p>
+          <button
+            type="button"
+            onClick={() => void handleInstall()}
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium text-[#5c7a9e] transition-colors hover:bg-[#dceaf7]/80 hover:text-[#0f2747] dark:text-[#94a8c4] dark:hover:bg-white/10 dark:hover:text-[#e8f2fc]"
+          >
+            <Download className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+            Instalar no celular
+          </button>
+        </footer>
       </div>
     </div>
   );
