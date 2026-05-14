@@ -205,3 +205,15 @@
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* Sonner — «sucesso» na paleta azul do app (evita verde padrão da biblioteca) */
+[data-sonner-toaster][data-theme="light"] {
+  --success-bg: hsl(214 100% 97%);
+  --success-border: hsl(221 83% 88%);
+  --success-text: hsl(222 47% 18%);
+}
+[data-sonner-toaster][data-theme="dark"] {
+  --success-bg: hsl(222 28% 14%);
+  --success-border: hsl(222 18% 26%);
+  --success-text: hsl(210 25% 96%);
+}

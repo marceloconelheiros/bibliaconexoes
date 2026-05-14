@@ -185,26 +185,31 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/[0.08] via-background to-accent/30 flex items-center justify-center p-4 relative overflow-hidden py-10">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,hsl(var(--primary)/0.18),transparent)] pointer-events-none" />
-      <div className="absolute top-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-      <div className="absolute bottom-0 right-0 w-[28rem] h-[28rem] bg-slate-400/12 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-100 p-4 py-10 dark:bg-slate-950">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_75%_55%_at_50%_-8%,hsl(var(--primary)/0.12),transparent_58%)] dark:bg-[radial-gradient(ellipse_75%_50%_at_50%_-10%,hsl(var(--primary)/0.14),transparent_55%)]"
+        aria-hidden
+      />
+      <div className="pointer-events-none absolute -left-24 top-1/4 h-72 w-72 rounded-full bg-slate-200/60 blur-3xl dark:bg-slate-800/40" aria-hidden />
+      <div className="pointer-events-none absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-slate-300/35 blur-3xl dark:bg-slate-800/30" aria-hidden />
 
       <Card
-        className={`w-full min-w-0 max-w-full border border-border/60 shadow-2xl bg-card/90 backdrop-blur-md relative z-10 animate-fade-in ${isRegister ? "max-w-lg" : "max-w-md"}`}
+        className={`relative z-10 w-full min-w-0 max-w-full animate-fade-in border border-slate-200/90 bg-card shadow-xl dark:border-slate-800 ${isRegister ? "max-w-lg" : "max-w-md"}`}
       >
-        <CardHeader className="text-center space-y-4 pb-2 px-4 sm:px-6 pt-6">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <CardHeader className="space-y-4 px-4 pb-2 pt-6 text-center sm:px-6">
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
             <img
               src="/logo.png"
               alt={BRAND.name}
-              className="w-14 h-14 rounded-lg shadow-md ring-2 ring-primary/15 shrink-0"
+              className="h-12 w-12 shrink-0 rounded-md object-cover shadow-sm ring-1 ring-slate-200/80 dark:ring-slate-700"
             />
             <div className="text-center sm:text-left">
-              <CardTitle className="font-display text-3xl font-bold tracking-tight text-foreground">
+              <CardTitle className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
                 {BRAND.name}
               </CardTitle>
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-primary mt-1">{BRAND.tagline}</p>
+              <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                {BRAND.tagline}
+              </p>
             </div>
           </div>
           <p className="text-sm text-muted-foreground pt-1">
@@ -400,7 +405,11 @@ const Login = () => {
           )}
 
           <div className="mt-4 text-center">
-            <button type="button" onClick={toggleMode} className="text-sm text-primary hover:underline">
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="text-sm font-medium text-slate-600 underline-offset-4 transition-colors hover:text-primary hover:underline dark:text-slate-400 dark:hover:text-primary"
+            >
               {isRegister ? "Já tem conta? Faça login" : "Não tem conta? Cadastre-se"}
             </button>
           </div>
