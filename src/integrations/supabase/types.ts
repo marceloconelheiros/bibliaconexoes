@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      audio_track_chapter_sources: {
+        Row: {
+          audio_track_id: string
+          chapter: number
+          created_at: string | null
+          id: string
+          object_path_or_url: string
+        }
+        Insert: {
+          audio_track_id: string
+          chapter: number
+          created_at?: string | null
+          id?: string
+          object_path_or_url: string
+        }
+        Update: {
+          audio_track_id?: string
+          chapter?: number
+          created_at?: string | null
+          id?: string
+          object_path_or_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audio_track_chapter_sources_audio_track_id_fkey"
+            columns: ["audio_track_id"]
+            isOneToOne: false
+            referencedRelation: "audio_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audio_tracks: {
         Row: {
           audio_url: string | null

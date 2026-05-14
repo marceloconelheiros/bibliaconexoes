@@ -13,6 +13,7 @@ import {
   getAudiosChapterRootDirectoryPath,
   getAudiosObjectPath,
   listSortedChapterMp3ForDirectory,
+  normalizeStorageAudioDirectValue,
   resolveAudiosPlaybackUrl,
 } from "@/lib/audio-playback-url";
 import { getAudiosBucketId } from "@/lib/supabase-env";
@@ -69,9 +70,19 @@ interface Book {
   audio_folder?: string | null;
 }
 
+type ChapterPlaybackItem = {
+  chapter: number;
+  publicUrl: string;
+  objectPath: string;
+};
+
+function supportsChapterBoard(book: Book | undefined, track: AudioTrack): boolean {
+  return !!book && track.psalms_group === "NONE" && book.chapters_count > 0;
+}
+
 type PlaybackTail =
   | { kind: "legacy"; trackId: string }
-  | { kind: "chapters"; trackId: string; items: ChapterMp3Item[]; index: number };
+  | { kind: "chapters"; trackId: string; items: ChapterPlaybackItem[]; index: number };
 
 const Audios = () => {
   const navigate = useNavigate();
@@ -86,12 +97,15 @@ const Audios = () => {
   const [expandedTrackId, setExpandedTrackId] = useState<string | null>(null);
   const [chapterCache, setChapterCache] = useState<Map<string, ChapterMp3Item[]>>(new Map());
   const [chapterLoadingTrackId, setChapterLoadingTrackId] = useState<string | null>(null);
-  /** Capítulo dentro da lista em reprodução (com fila até ao fim do livro). */
+  /** Capítulo dentro da lista em reprodução (com fila até ao fim dos capítulos com áudio). */
   const [playingChapters, setPlayingChapters] = useState<{
     trackId: string;
-    items: ChapterMp3Item[];
+    items: ChapterPlaybackItem[];
     index: number;
   } | null>(null);
+
+  /** `audio_track_id` → número do capítulo → caminho ou URL guardado na BD */
+  const [chapterDbByTrack, setChapterDbByTrack] = useState<Map<string, Map<number, string>>>(() => new Map());
 
   const playbackTailRef = useRef<PlaybackTail | null>(null);
 
@@ -121,6 +135,15 @@ const Audios = () => {
     }
 
     const booksMap = new Map(booksData?.map((b) => [b.id, b]) || []);
+
+    const { data: chapterRows } = await supabase.from("audio_track_chapter_sources").select("*");
+    const chapterMapByTrackId = new Map<string, Map<number, string>>();
+    for (const row of chapterRows ?? []) {
+      const tid = row.audio_track_id as string;
+      if (!chapterMapByTrackId.has(tid)) chapterMapByTrackId.set(tid, new Map<number, string>());
+      chapterMapByTrackId.get(tid)!.set(row.chapter as number, String(row.object_path_or_url ?? "").trim());
+    }
+    setChapterDbByTrack(chapterMapByTrackId);
 
     const sortedTracks = (tracks || [])
       .map((track) => ({
@@ -212,7 +235,59 @@ const Audios = () => {
     return true;
   };
 
-  const playChapterAtIndex = async (track: AudioTrack, items: ChapterMp3Item[], index: number) => {
+  const resolveChapterMerged = (
+    chapterNum: number,
+    track: AudioTrack,
+    storageList: ChapterMp3Item[],
+  ): ChapterPlaybackItem | null => {
+    const dbMap = chapterDbByTrack.get(track.id);
+    const raw = dbMap?.get(chapterNum)?.trim();
+    if (raw) {
+      const n = normalizeStorageAudioDirectValue(raw);
+      if (n) return { chapter: chapterNum, publicUrl: n.publicUrl, objectPath: n.objectPath };
+    }
+    const st = storageList.find((x) => x.chapter === chapterNum);
+    if (st) return { chapter: chapterNum, publicUrl: st.publicUrl, objectPath: st.objectPath };
+    return null;
+  };
+
+  const countPlayableChapters = (book: Book, track: AudioTrack, storageList: ChapterMp3Item[]): number => {
+    let n = 0;
+    for (let c = 1; c <= book.chapters_count; c++) {
+      if (resolveChapterMerged(c, track, storageList)) n += 1;
+    }
+    return n;
+  };
+
+  const buildForwardPlaylistFrom = (
+    book: Book,
+    track: AudioTrack,
+    startChapter: number,
+    storageList: ChapterMp3Item[],
+  ): ChapterPlaybackItem[] => {
+    const list: ChapterPlaybackItem[] = [];
+    for (let c = startChapter; c <= book.chapters_count; c++) {
+      const it = resolveChapterMerged(c, track, storageList);
+      if (it) list.push(it);
+    }
+    return list;
+  };
+
+  const playFromChapterNumber = async (track: AudioTrack, book: Book, chapterNum: number) => {
+    const root = getAudiosChapterRootDirectoryPath(track, book);
+    const storageList =
+      chapterCache.get(track.id) ?? (root ? await ensureChapterListLoaded(track, book) : []);
+    const playlist = buildForwardPlaylistFrom(book, track, chapterNum, storageList);
+    if (!playlist.length) {
+      toast.error(
+        `Sem áudio configurado desde o capítulo ${chapterNum}. Usa a tabela audio_track_chapter_sources (caminho até ao .mp3 por capítulo).`,
+      );
+      return;
+    }
+    await playChapterAtIndex(track, playlist, 0);
+  };
+
+  const playChapterAtIndex = async (track: AudioTrack, items: ChapterPlaybackItem[], index: number) => {
     const item = items[index];
     if (!item || !books.get(track.book_id)) return;
 
@@ -383,6 +458,8 @@ const Audios = () => {
   };
 
   const toggleExpandTrack = async (track: AudioTrack, book: Book) => {
+    if (!supportsChapterBoard(book, track)) return;
+
     if (expandedTrackId === track.id) {
       setExpandedTrackId(null);
       return;
@@ -396,7 +473,14 @@ const Audios = () => {
   };
 
   const handleMainPlay = async (track: AudioTrack, book: Book) => {
-    if (!audiosBuiltInPlaybackConfigured(track, book)) return;
+    const pathsInDb = chapterDbByTrack.get(track.id)?.size ?? 0;
+    const hasDbPaths = pathsInDb > 0;
+    const builtinConfigured = audiosBuiltInPlaybackConfigured(track, book);
+    const canTapPlay = supportsChapterBoard(book, track)
+      ? hasDbPaths || builtinConfigured || !!getAudiosChapterRootDirectoryPath(track, book)
+      : hasDbPaths || builtinConfigured;
+
+    if (!canTapPlay) return;
 
     if (currentPlaying === track.id && audioElement) {
       if (playbackTailRef.current?.kind === "legacy") {
@@ -412,20 +496,39 @@ const Audios = () => {
       return;
     }
 
-    const chapterRoot = getAudiosChapterRootDirectoryPath(track, book);
-    if (chapterRoot) {
-      const list = await ensureChapterListLoaded(track, book);
-      if (list.length > 1) {
+    if (supportsChapterBoard(book, track)) {
+      const root = getAudiosChapterRootDirectoryPath(track, book);
+      const storageList =
+        chapterCache.get(track.id) ?? (root ? await ensureChapterListLoaded(track, book) : []);
+      const playable = countPlayableChapters(book, track, storageList);
+
+      if (playable > 1) {
         setExpandedTrackId(track.id);
-        toast.message("Escolhe o capítulo abaixo.", { duration: 2500 });
+        toast.message("Escolhe o capítulo na grelha.", { duration: 2500 });
         return;
       }
-      if (list.length === 1) {
-        await playChapterAtIndex(track, list, 0);
+
+      if (playable === 1) {
+        for (let c = 1; c <= book.chapters_count; c++) {
+          if (resolveChapterMerged(c, track, storageList)) {
+            await playChapterAtIndex(track, buildForwardPlaylistFrom(book, track, c, storageList), 0);
+            return;
+          }
+        }
+      }
+
+      if (hasDbPaths && playable === 0) {
+        setExpandedTrackId(track.id);
+        toast.message("Preenche object_path_or_url em audio_track_chapter_sources por capítulo.", {
+          duration: 4000,
+        });
         return;
       }
+
+      if (playable === 0 && !builtinConfigured) return;
     }
 
+    if (!builtinConfigured) return;
     await playLegacySingleTrack(track, book);
   };
 
@@ -491,7 +594,19 @@ const Audios = () => {
                 <h1 className="text-2xl font-bold">Bíblia em Áudio</h1>
                 <p className="text-sm text-muted-foreground">
                   {
-                    audioTracks.filter((t) => audiosBuiltInPlaybackConfigured(t, books.get(t.book_id))).length
+                    audioTracks.filter((t) => {
+                      const b = books.get(t.book_id);
+                      if (!b) return false;
+                      const dbN = chapterDbByTrack.get(t.id)?.size ?? 0;
+                      if (supportsChapterBoard(b, t)) {
+                        return (
+                          dbN > 0 ||
+                          !!getAudiosChapterRootDirectoryPath(t, b) ||
+                          audiosBuiltInPlaybackConfigured(t, b)
+                        );
+                      }
+                      return dbN > 0 || audiosBuiltInPlaybackConfigured(t, b);
+                    }).length
                   }{" "}
                   de {audioTracks.length} faixas com áudio configurado
                 </p>
@@ -508,11 +623,11 @@ const Audios = () => {
                 <Volume2 className="w-12 h-12 mx-auto text-muted-foreground" />
                 <p className="text-muted-foreground font-medium">Nenhuma faixa listada</p>
                 <p className="text-sm text-muted-foreground max-w-lg mx-auto leading-relaxed">
-                  O app usa <code className="text-xs">books</code>, <code className="text-xs">audio_tracks</code> e o
-                  bucket <code className="text-xs">audios</code>. Por livro: pasta{" "}
-                  <code className="text-xs">Biblia/Velho ou Novo Testamento/NomeDoLivro/</code> com um MP3 por capítulo (
-                  <code className="text-xs">01.mp3</code>, <code className="text-xs">Gn_001.mp3</code>, …) ou um único MP3 por livro (<code className="text-xs">Gn.mp3</code>).
-                  Ver <code className="text-xs">.env.example</code>.
+                  Usa{" "}
+                  <code className="text-xs">audio_track_chapter_sources</code>{" "}
+                  (caminho ou URL até ao .mp3 por capítulo), ou <code className="text-xs">audio_url</code> na faixa /
+                  ficheiros no bucket <code className="text-xs">audios</code>. Ver{" "}
+                  <code className="text-xs">.env.example</code>.
                 </p>
               </CardContent>
             </Card>
@@ -528,174 +643,219 @@ const Audios = () => {
                   </div>
                   <div className="space-y-4">
                     {section.tracks.map((track) => {
-              const book = books.get(track.book_id);
-              const isExpanded = expandedTrackId === track.id;
-              const chapterRoot = book ? getAudiosChapterRootDirectoryPath(track, book) : null;
-              const chapterList = chapterCache.get(track.id);
-              const isChapterBook = !!(chapterRoot && (chapterList?.length ?? 0) > 0);
+                      const book = books.get(track.book_id);
+                      const isExpanded = expandedTrackId === track.id;
+                      const chapterRoot = book ? getAudiosChapterRootDirectoryPath(track, book) : null;
+                      const storageListForMerge = chapterCache.get(track.id) ?? [];
 
-              const isPlaying = currentPlaying === track.id && !!audioElement;
-              const canPlay = book ? audiosBuiltInPlaybackConfigured(track, book) : false;
+                      const pathsInDb = chapterDbByTrack.get(track.id)?.size ?? 0;
+                      const showChapterBoard = book ? supportsChapterBoard(book, track) : false;
 
-              const pc = playingChapters?.trackId === track.id ? playingChapters : null;
+                      const canPlay =
+                        !!book &&
+                        (showChapterBoard
+                          ? pathsInDb > 0 ||
+                            !!chapterRoot ||
+                            audiosBuiltInPlaybackConfigured(track, book)
+                          : pathsInDb > 0 || audiosBuiltInPlaybackConfigured(track, book));
 
-              return (
-                <Card
-                  key={track.id}
-                  className={`transition-all ${isPlaying ? "border-primary border-2 shadow-lg" : ""}`}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2">
-                      <div className="flex-1 min-w-0 flex items-start gap-1">
-                        {chapterRoot ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-9 w-9 shrink-0 mt-0.5"
-                            onClick={() => book && void toggleExpandTrack(track, book)}
-                            aria-expanded={isExpanded}
-                            aria-label={isExpanded ? "Fechar capítulos" : "Ver capítulos"}
-                          >
-                            {isExpanded ? (
-                              <ChevronDown className="w-5 h-5" />
-                            ) : (
-                              <ChevronRight className="w-5 h-5" />
-                            )}
-                          </Button>
-                        ) : (
-                          <span className="w-9 shrink-0" />
-                        )}
-                        <button
-                          type="button"
-                          className="text-left flex-1 min-w-0"
-                          onClick={() => chapterRoot && book && void toggleExpandTrack(track, book)}
-                          disabled={!chapterRoot || !book}
+                      const playableGridHint =
+                        book && showChapterBoard
+                          ? pathsInDb + (chapterRoot ? chapterCache.get(track.id)?.length ?? 0 : 0) > 1
+                          : false;
+
+                      const isPlaying = currentPlaying === track.id && !!audioElement;
+
+                      const pc = playingChapters?.trackId === track.id ? playingChapters : null;
+
+                      const openChapterBoard = () => {
+                        if (!book || !showChapterBoard) return;
+                        void toggleExpandTrack(track, book);
+                      };
+
+                      return (
+                        <Card
+                          key={track.id}
+                          className={`transition-all ${isPlaying ? "border-primary border-2 shadow-lg" : ""}`}
                         >
-                          <div className="text-lg">
-                            <span>{book?.name || track.title}</span>
-                            {book != null && book.chapters_count > 0 ? (
-                              <span className="text-muted-foreground font-normal"> ({book.chapters_count} cap.)</span>
-                            ) : null}
-                          </div>
-                          {track.psalms_group !== "NONE" && (
-                            <div className="text-sm font-normal text-muted-foreground">{track.title}</div>
-                          )}
-                          {chapterRoot && (
-                            <div className="text-xs font-normal text-muted-foreground mt-1">
-                              {chapterList?.length ? (
-                                <>
-                                  {chapterList.length} capítulo{chapterList.length !== 1 ? "s" : ""} no Storage
-                                </>
-                              ) : chapterLoadingTrackId === track.id ? (
-                                <>A ler lista de capítulos…</>
-                              ) : (
-                                <>Áudio por capítulo nesta pasta — abre para listar.</>
-                              )}
-                            </div>
-                          )}
-                        </button>
-                      </div>
-                      <Button
-                        size="icon"
-                        variant={isPlaying ? "default" : "outline"}
-                        onClick={() => book && void handleMainPlay(track, book)}
-                        disabled={!canPlay}
-                        aria-label={
-                          chapterRoot && (chapterCache.get(track.id)?.length ?? 0) > 1 ? "Escolher capítulo" : "Reproduzir"
-                        }
-                      >
-                        {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-
-                  {chapterRoot && book && isExpanded && (
-                    <CardContent className="pt-0 pb-4 space-y-2 border-t mt-2">
-                      {chapterLoadingTrackId === track.id && chapterList === undefined ? (
-                        <p className="text-sm text-muted-foreground py-4">A carregar capítulos…</p>
-                      ) : (chapterList?.length ?? 0) === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          Sem ficheiros .mp3 nesta pasta. Para um único livro inteiro usa{" "}
-                          <code className="text-xs">{getAudiosObjectPath(track, book) ?? "Gn.mp3"}</code>.
-                        </p>
-                      ) : (
-                        <>
-                          <p className="text-sm font-medium">Capítulos</p>
-                          <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-2 bc-scroll-y max-h-48 overflow-y-auto pr-1">
-                            {chapterList!.map((ch, idx) => {
-                              const chapterActive = !!(isPlaying && pc?.index === idx);
-                              return (
-                                <Button
-                                  key={`${ch.objectPath}-${idx}`}
-                                  variant={chapterActive ? "default" : "outline"}
-                                  size="sm"
-                                  className="h-9 text-xs px-1"
-                                  onClick={() => void playChapterAtIndex(track, chapterList!, idx)}
+                          <CardHeader className="pb-2">
+                            <CardTitle className="flex items-center gap-2">
+                              <div className="flex-1 min-w-0 flex items-start gap-1">
+                                {showChapterBoard ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0 mt-0.5"
+                                    onClick={() => openChapterBoard()}
+                                    aria-expanded={isExpanded}
+                                    aria-label={isExpanded ? "Fechar capítulos" : "Ver capítulos"}
+                                  >
+                                    {isExpanded ? (
+                                      <ChevronDown className="w-5 h-5" />
+                                    ) : (
+                                      <ChevronRight className="w-5 h-5" />
+                                    )}
+                                  </Button>
+                                ) : (
+                                  <span className="w-9 shrink-0" />
+                                )}
+                                <button
+                                  type="button"
+                                  className="text-left flex-1 min-w-0"
+                                  onClick={() => openChapterBoard()}
+                                  disabled={!book || !showChapterBoard}
                                 >
-                                  {ch.chapter}
-                                </Button>
-                              );
-                            })}
-                          </div>
-                        </>
-                      )}
-                    </CardContent>
-                  )}
+                                  <div className="text-lg">
+                                    <span>{book?.name || track.title}</span>
+                                    {book != null && book.chapters_count > 0 ? (
+                                      <span className="text-muted-foreground font-normal">
+                                        {" "}
+                                        ({book.chapters_count} cap.)
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  {track.psalms_group !== "NONE" && (
+                                    <div className="text-sm font-normal text-muted-foreground">{track.title}</div>
+                                  )}
+                                  {showChapterBoard && book && (
+                                    <div className="text-xs font-normal text-muted-foreground mt-1">
+                                      {pathsInDb > 0 ? (
+                                        <span>
+                                          {pathsInDb} registo{pathsInDb !== 1 ? "s" : ""} em{" "}
+                                          <code className="text-[10px]">audio_track_chapter_sources</code>
+                                        </span>
+                                      ) : (
+                                        <span>Sem URLs por capítulo na BD — usa a tabela para apontar a cada MP3.</span>
+                                      )}
+                                      {chapterRoot ? (
+                                        chapterLoadingTrackId === track.id ? (
+                                          <span className="block mt-1">A ler lista de ficheiros no Storage…</span>
+                                        ) : (
+                                          <span className="block mt-1">
+                                            Pasta no Storage — {chapterCache.get(track.id)?.length ?? 0} .mp3
+                                            detectado{(chapterCache.get(track.id)?.length ?? 0) !== 1 ? "s" : ""}.
+                                          </span>
+                                        )
+                                      ) : null}
+                                      <span className="block mt-0.5">Toca aqui ou na seta para abrir os capítulos.</span>
+                                    </div>
+                                  )}
+                                </button>
+                              </div>
+                              <Button
+                                size="icon"
+                                variant={isPlaying ? "default" : "outline"}
+                                onClick={() => book && void handleMainPlay(track, book)}
+                                disabled={!canPlay}
+                                aria-label={playableGridHint ? "Abrir lista de capítulos" : "Reproduzir"}
+                              >
+                                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                              </Button>
+                            </CardTitle>
+                          </CardHeader>
 
-                  {isPlaying && (
-                    <CardContent className="space-y-4 border-t">
-                      <div className="space-y-2">
-                        <Slider
-                          value={[currentTime]}
-                          max={duration || 1}
-                          step={1}
-                          onValueChange={handleSeek}
-                          className="w-full"
-                        />
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>{formatTime(currentTime)}</span>
-                          <span>
-                            {pc?.items?.[pc.index] ? `Cap. ${pc.items[pc.index].chapter} · ` : ""}
-                            {formatTime(duration)}
-                          </span>
-                        </div>
-                      </div>
+                          {showChapterBoard && book && isExpanded && (
+                            <CardContent className="pt-0 pb-4 space-y-2 border-t mt-2">
+                              <p className="text-sm font-medium">Capítulos (1–{book.chapters_count})</p>
+                              {chapterLoadingTrackId === track.id && chapterRoot && !chapterCache.has(track.id) ? (
+                                <p className="text-sm text-muted-foreground py-2">A carregar ficheiros do Storage…</p>
+                              ) : null}
+                              <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-2 bc-scroll-y max-h-64 overflow-y-auto pr-1">
+                                {Array.from({ length: book.chapters_count }, (_, i) => i + 1).map((n) => {
+                                  const playable = !!resolveChapterMerged(n, track, storageListForMerge);
+                                  const chapterActive =
+                                    isPlaying &&
+                                    !!(pc?.items?.[pc.index] && pc.items[pc.index].chapter === n);
+                                  return (
+                                    <Button
+                                      key={`ch-${track.id}-${n}`}
+                                      variant={
+                                        chapterActive ? "default" : playable ? "outline" : "ghost"
+                                      }
+                                      disabled={!playable}
+                                      size="sm"
+                                      title={
+                                        playable
+                                          ? `Reproduzir capítulo ${n}`
+                                          : `Sem áudio configurado para o capítulo ${n}`
+                                      }
+                                      className={`h-10 min-w-[2rem] px-1 text-xs font-semibold ${
+                                        !playable ? "opacity-45" : ""
+                                      }`}
+                                      onClick={() => book && void playFromChapterNumber(track, book, n)}
+                                    >
+                                      {n}
+                                    </Button>
+                                  );
+                                })}
+                              </div>
+                              <p className="text-[11px] text-muted-foreground leading-snug pt-2">
+                                Desativa ou deixa em branco{" "}
+                                <code className="text-[10px]">audio_url</code> apenas com pasta; preenche{" "}
+                                <code className="text-[10px] mx-1">object_path_or_url</code> cada linha até ao ficheiro
+                                (.mp3). Ex.: Biblia/Velho Testamento/Genesis/01.mp3
+                              </p>
+                            </CardContent>
+                          )}
 
-                      {!isChapterBook &&
-                        track.chapter_timestamps &&
-                        track.chapter_timestamps.length > 0 &&
-                        playbackTailRef.current?.kind === "legacy" && (
-                          <div className="border-t pt-3">
-                            <p className="text-sm font-medium mb-2">Saltos na faixa (áudio único):</p>
-                            <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 max-h-32 bc-scroll-y">
-                              {track.chapter_timestamps.map((chapter) => (
-                                <Button
-                                  key={chapter.chapter}
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-8 text-xs"
-                                  onClick={() => jumpToBookmarkTimestamp(chapter.time)}
-                                >
-                                  {chapter.chapter}
-                                </Button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                    </CardContent>
-                  )}
+                          {isPlaying && (
+                            <CardContent className="space-y-4 border-t">
+                              <div className="space-y-2">
+                                <Slider
+                                  value={[currentTime]}
+                                  max={duration || 1}
+                                  step={1}
+                                  onValueChange={handleSeek}
+                                  className="w-full"
+                                />
+                                <div className="flex justify-between text-xs text-muted-foreground">
+                                  <span>{formatTime(currentTime)}</span>
+                                  <span>
+                                    {pc?.items?.[pc.index]
+                                      ? `Cap. ${pc.items[pc.index].chapter} · `
+                                      : ""}
+                                    {formatTime(duration)}
+                                  </span>
+                                </div>
+                              </div>
 
-                  {!canPlay && (
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Sem áudio configurado. Define <code className="text-xs">VITE_SUPABASE_AUDIOS_PREFIX=Biblia</code>
-                        , coloca MP3 por capítulo na pasta do livro no Storage ou preenche{" "}
-                        <code className="text-xs">audio_url</code> (pasta ou ficheiro).
-                      </p>
-                    </CardContent>
-                  )}
-                </Card>
-              );
+                              {!playingChapters &&
+                                track.chapter_timestamps &&
+                                track.chapter_timestamps.length > 0 && (
+                                  <div className="border-t pt-3">
+                                    <p className="text-sm font-medium mb-2">
+                                      Saltos na faixa (áudio único):
+                                    </p>
+                                    <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 max-h-32 bc-scroll-y">
+                                      {track.chapter_timestamps.map((chapter) => (
+                                        <Button
+                                          key={chapter.chapter}
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-8 text-xs"
+                                          onClick={() => jumpToBookmarkTimestamp(chapter.time)}
+                                        >
+                                          {chapter.chapter}
+                                        </Button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                            </CardContent>
+                          )}
+
+                          {!canPlay && (
+                            <CardContent>
+                              <p className="text-sm text-muted-foreground leading-relaxed">
+                                Sem áudio. Insere linhas na tabela{" "}
+                                <code className="text-xs">audio_track_chapter_sources</code> ou configura Storage /{" "}
+                                <code className="text-xs">audio_url</code> conforme{" "}
+                                <code className="text-xs">.env.example</code>.
+                              </p>
+                            </CardContent>
+                          )}
+                        </Card>
+                      );
                     })}
                   </div>
                 </section>
