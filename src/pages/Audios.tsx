@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -109,6 +109,8 @@ const Audios = () => {
   const [chapterDbByTrack, setChapterDbByTrack] = useState<Map<string, Map<number, string>>>(() => new Map());
 
   const playbackTailRef = useRef<PlaybackTail | null>(null);
+  /** Força novo render quando `audio.pause()` / `play()` mudam só no elemento nativo. */
+  const [, bumpAudioUi] = useReducer((n: number) => n + 1, 0);
 
   useEffect(() => {
     void loadAudioData();
@@ -196,6 +198,12 @@ const Audios = () => {
     setPlayingChapters(null);
     setAudioElement((prev) => {
       if (prev) {
+        prev.onerror = null;
+        prev.onended = null;
+        prev.onloadedmetadata = null;
+        prev.ontimeupdate = null;
+        prev.onplay = null;
+        prev.onpause = null;
         prev.pause();
         prev.src = "";
       }
@@ -308,6 +316,8 @@ const Audios = () => {
     if (!ok) return;
 
     const audio = new Audio(item.publicUrl);
+    audio.onplay = () => bumpAudioUi();
+    audio.onpause = () => bumpAudioUi();
 
     playbackTailRef.current = { kind: "chapters", trackId: track.id, items, index };
     setPlayingChapters({ trackId: track.id, items, index });
@@ -403,6 +413,9 @@ const Audios = () => {
     if (!ok) return;
 
     const audio = new Audio(src);
+    audio.onplay = () => bumpAudioUi();
+    audio.onpause = () => bumpAudioUi();
+
     playbackTailRef.current = { kind: "legacy", trackId: track.id };
     setPlayingChapters(null);
     setCurrentPlaying(track.id);
@@ -485,16 +498,22 @@ const Audios = () => {
     if (!canTapPlay) return;
 
     if (currentPlaying === track.id && audioElement) {
-      if (playbackTailRef.current?.kind === "legacy") {
-        saveLegacyProgress(track.id, audioElement.currentTime);
-      } else if (playbackTailRef.current?.kind === "chapters") {
-        const cur = playbackTailRef.current.items[playbackTailRef.current.index];
-        if (cur) saveChapterProgress(track.id, cur.objectPath, audioElement.currentTime);
+      if (!audioElement.paused) {
+        if (playbackTailRef.current?.kind === "legacy") {
+          saveLegacyProgress(track.id, audioElement.currentTime);
+        } else if (playbackTailRef.current?.kind === "chapters") {
+          const cur = playbackTailRef.current.items[playbackTailRef.current.index];
+          if (cur) saveChapterProgress(track.id, cur.objectPath, audioElement.currentTime);
+        }
+        audioElement.pause();
+        return;
       }
-      stopCurrentAudio();
-      setCurrentPlaying(null);
-      setCurrentTime(0);
-      setDuration(0);
+      void audioElement.play().catch((error: Error) => {
+        if (error.name !== "AbortError") {
+          console.error("Erro ao retomar áudio:", error);
+          toast.error(`Erro ao retomar ${track.title}`);
+        }
+      });
       return;
     }
 
@@ -666,7 +685,9 @@ const Audios = () => {
                           ? pathsInDb + (chapterRoot ? chapterCache.get(track.id)?.length ?? 0 : 0) > 1
                           : false;
 
-                      const isPlaying = currentPlaying === track.id && !!audioElement;
+                      const audioUiTrackActive = currentPlaying === track.id && !!audioElement;
+                      const showPauseIcon =
+                        audioUiTrackActive && audioElement && !audioElement.paused;
 
                       const pc = playingChapters?.trackId === track.id ? playingChapters : null;
 
@@ -678,7 +699,7 @@ const Audios = () => {
                       return (
                         <Card
                           key={track.id}
-                          className={`transition-all ${isPlaying ? "border-primary border-2 shadow-lg" : ""}`}
+                          className={`transition-all ${audioUiTrackActive ? "border-primary border-2 shadow-lg" : ""}`}
                         >
                           <CardHeader className="pb-2">
                             <CardTitle className="flex items-center gap-2">
@@ -715,12 +736,20 @@ const Audios = () => {
                               </div>
                               <Button
                                 size="icon"
-                                variant={isPlaying ? "default" : "outline"}
+                                variant={audioUiTrackActive ? "default" : "outline"}
                                 onClick={() => book && void handleMainPlay(track, book)}
                                 disabled={!canPlay}
-                                aria-label={playableGridHint ? "Abrir lista de capítulos" : "Reproduzir"}
+                                aria-label={
+                                  showPauseIcon
+                                    ? "Pausar"
+                                    : audioUiTrackActive && audioElement?.paused
+                                      ? "Continuar"
+                                      : playableGridHint
+                                        ? "Abrir lista de capítulos"
+                                        : "Reproduzir"
+                                }
                               >
-                                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                                {showPauseIcon ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                               </Button>
                             </CardTitle>
                           </CardHeader>
@@ -735,7 +764,7 @@ const Audios = () => {
                                 {Array.from({ length: book.chapters_count }, (_, i) => i + 1).map((n) => {
                                   const playable = !!resolveChapterMerged(n, track, storageListForMerge);
                                   const chapterActive =
-                                    isPlaying &&
+                                    audioUiTrackActive &&
                                     !!(pc?.items?.[pc.index] && pc.items[pc.index].chapter === n);
                                   return (
                                     <Button
@@ -763,7 +792,7 @@ const Audios = () => {
                             </CardContent>
                           )}
 
-                          {isPlaying && (
+                          {audioUiTrackActive && (
                             <CardContent className="space-y-4 border-t">
                               <div className="space-y-2">
                                 <Slider
