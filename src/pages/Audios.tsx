@@ -7,7 +7,11 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Slider } from "@/components/ui/slider";
 import { ArrowLeft, Volume2, Play, Pause } from "lucide-react";
 import { toast } from "sonner";
-import { getAudioPlaybackUrl, getAudiosObjectPath } from "@/lib/audio-playback-url";
+import {
+  audiosBuiltInPlaybackConfigured,
+  getAudiosObjectPath,
+  resolveAudiosPlaybackUrl,
+} from "@/lib/audio-playback-url";
 import { getAudiosBucketId } from "@/lib/supabase-env";
 
 async function messageFromStorageErrorResponse(res: Response): Promise<string | undefined> {
@@ -33,7 +37,7 @@ function audioStorageFailureToast(
     return `${head} Verifica se o URL usa /storage/v1/object/… e não /rest/v1/object/… (este último exige chave). Na Vercel, confere VITE_PUBLIC_AUDIO_BASE_URL e na tabela audio_url.`;
   }
   if (/not\s*found|nosuchkey|object\s+not\s+found/i.test(apiMsg ?? "")) {
-    return `${head} O ficheiro não existe nesse caminho no Storage (bucket «${bucket}»). Caminho esperado (relativo ao bucket): ${nome}. Confirma pastas OT/NT e a variável VITE_SUPABASE_AUDIOS_PREFIX na Vercel, ou define audio_url na faixa.`;
+    return `${head} O ficheiro não existe nesse caminho no Storage (bucket «${bucket}»). Caminho esperado (relativo ao bucket): ${nome}. Confirme VITE_SUPABASE_AUDIOS_PREFIX (ex.: Biblia), a pasta do livro em books.audio_folder ou o nome do livro, ou use audio_url na faixa.`;
   }
   return `${head} Usa no bucket «${bucket}» o caminho ${nome} — ou preenche audio_url nesta faixa.`;
 }
@@ -58,6 +62,7 @@ interface Book {
   abbrev: string;
   testament: string;
   order_index: number;
+  audio_folder?: string | null;
 }
 
 const Audios = () => {
@@ -140,15 +145,15 @@ const Audios = () => {
 
   const playAudio = async (track: AudioTrack) => {
     const book = books.get(track.book_id);
-    const src = getAudioPlaybackUrl(track, book);
-    const objectPath = getAudiosObjectPath(track, book);
-
-    if (!src) {
+    const resolved = await resolveAudiosPlaybackUrl(track, book);
+    if (!resolved) {
       toast.error(
-        "Sem URL para esta faixa — verifique se o livro tem abbrev no Supabase ou se VITE_SUPABASE_URL está no .env.",
+        "Não foi possível montar o URL do áudio. Confirme VITE_SUPABASE_AUDIOS_PREFIX=Biblia, books.audio_folder (pasta exacta) ou VITE_SUPABASE_AUDIOS_FILE_MODE=auto.",
       );
       return;
     }
+    const src = resolved.publicUrl;
+    const objectPath = resolved.objectPath;
 
     // If clicking on the same track, pause and dismiss player chrome
     if (currentPlaying === track.id && audioElement) {
@@ -291,7 +296,7 @@ const Audios = () => {
                 <h1 className="text-2xl font-bold">Bíblia em Áudio</h1>
                 <p className="text-sm text-muted-foreground">
                   {
-                    audioTracks.filter((t) => getAudioPlaybackUrl(t, books.get(t.book_id))).length
+                    audioTracks.filter((t) => audiosBuiltInPlaybackConfigured(t, books.get(t.book_id))).length
                   }{" "}
                   de {audioTracks.length} faixas com áudio configurado
                 </p>
@@ -315,7 +320,8 @@ const Audios = () => {
                   <code className="text-xs">20260509140000_seed_books_and_audio_tracks.sql</code>) ou rode{" "}
                   <code className="text-xs">supabase db push</code>. Depois, envie os MP3 ao bucket público{" "}
                   <code className="text-xs">audios</code> no caminho esperado (raiz ou{" "}
-                  <code className="text-xs">VITE_SUPABASE_AUDIOS_PREFIX</code> + OT/NT — ver{" "}
+                  <code className="text-xs">VITE_SUPABASE_AUDIOS_PREFIX</code> (ex.: Biblia), pasta por livro em{" "}
+                  <code className="text-xs">books.audio_folder</code> ou nome sem acentos — ver{" "}
                   <code className="text-xs">.env.example</code>) — ex.:{" "}
                   <code className="text-xs">Gn.mp3</code>, <code className="text-xs">Ex.mp3</code> para Êxodo,{" "}
                   <code className="text-xs">Sl_PS1.mp3</code>, etc.).
@@ -326,7 +332,7 @@ const Audios = () => {
             audioTracks.map((track) => {
               const book = books.get(track.book_id);
               const isPlaying = currentPlaying === track.id;
-              const canPlay = !!getAudioPlaybackUrl(track, book);
+              const canPlay = audiosBuiltInPlaybackConfigured(track, book);
 
               return (
                 <Card 

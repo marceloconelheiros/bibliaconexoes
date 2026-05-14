@@ -10,10 +10,8 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_AUDIOS_BUCKET?: string;
   /** Pastas dentro do bucket antes do testamento, ex.: files/audio/biblia (sem / no início). Se vazio, MP3 na raiz. */
   readonly VITE_SUPABASE_AUDIOS_PREFIX?: string;
-  /** Pasta no Storage para livros OT (por omissão: Velho Testamento) */
-  readonly VITE_SUPABASE_AUDIOS_FOLDER_OT?: string;
-  /** Pasta no Storage para livros NT (por omissão: Novo Testamento) */
-  readonly VITE_SUPABASE_AUDIOS_FOLDER_NT?: string;
+  /** `slug` (por omissão) = Gn.mp3 derivado do abbrev; `auto` = listar pasta do livro e usar .mp3 encontrado */
+  readonly VITE_SUPABASE_AUDIOS_FILE_MODE?: string;
 }
 
 interface ImportMeta {

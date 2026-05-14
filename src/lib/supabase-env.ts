@@ -20,29 +20,40 @@ export function isSupabaseEnvReady(): boolean {
   return readSupabaseEnv() !== null;
 }
 
+/**
+ * Remove aspas e o prefixo acidental `VITE_ALGO=` quando se cola a linha inteira no campo da Vercel.
+ */
+export function sanitizeEnvPlainValue(raw: string | undefined): string {
+  if (raw == null) return "";
+  let t = raw.trim().replace(/^["']|["']$/g, "");
+  t = t.replace(/^VITE_[A-Z0-9_]+\s*=\s*/i, "").trim();
+  return t.replace(/^["']|["']$/g, "");
+}
+
 /** ID do bucket Storage dos MP3 (migração usa `audios`). Use `VITE_SUPABASE_AUDIOS_BUCKET` se o id no Dashboard for outro. */
 export function getAudiosBucketId(): string {
-  const id = (import.meta.env.VITE_SUPABASE_AUDIOS_BUCKET ?? "").trim();
+  const id = sanitizeEnvPlainValue(import.meta.env.VITE_SUPABASE_AUDIOS_BUCKET ?? "");
   return id || "audios";
 }
 
 /**
- * Caminho dentro do bucket antes da pasta do testamento e do ficheiro.
- * Ex.: `files/audio/biblia` (sem barra inicial/final). Vazio = ficheiros na raiz do bucket.
+ * Caminho dentro do bucket até ao Velho/Novo Testamento (sem barra inicial/final).
+ * Ex.: `Biblia`. Vazio = ficheiros na raiz do bucket.
  */
 export function getAudiosObjectPrefixPath(): string {
-  const p = (import.meta.env.VITE_SUPABASE_AUDIOS_PREFIX ?? "").trim();
+  let p = sanitizeEnvPlainValue(import.meta.env.VITE_SUPABASE_AUDIOS_PREFIX ?? "");
   if (!p) return "";
+  if (/https?:\/\//i.test(p) || /supabase\.com\/dashboard/i.test(p)) return "";
   return p.replace(/^\/+|\/+$/g, "").replace(/\/{2,}/g, "/");
 }
 
-/**
- * Nome da pasta de testamento dentro do prefixo (livros `books.testament`: OT / NT).
- * Por defeito coincide com pastas em português no Storage.
- */
-export function getAudiosTestamentFolder(testament: string | null | undefined): string {
-  const t = (testament ?? "").trim().toUpperCase();
-  const nt = (import.meta.env.VITE_SUPABASE_AUDIOS_FOLDER_NT ?? "").trim() || "Novo Testamento";
-  const ot = (import.meta.env.VITE_SUPABASE_AUDIOS_FOLDER_OT ?? "").trim() || "Velho Testamento";
-  return t === "NT" ? nt : ot;
+/** Pastas de testamento iguais ao layout típico no Storage (português). */
+export function audiosTestamentFolderFromDb(testament: string | null | undefined): string {
+  return (testament ?? "").trim().toUpperCase() === "NT" ? "Novo Testamento" : "Velho Testamento";
+}
+
+/** `slug` = nome fixo Gn.mp3 etc.; `auto` = listar pasta do livro no Storage e usar o .mp3 encontrado. */
+export function getAudiosFileMode(): "slug" | "auto" {
+  const m = sanitizeEnvPlainValue(import.meta.env.VITE_SUPABASE_AUDIOS_FILE_MODE ?? "").toLowerCase();
+  return m === "auto" ? "auto" : "slug";
 }

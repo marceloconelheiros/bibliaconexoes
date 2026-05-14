@@ -55,6 +55,7 @@ export type Database = {
       books: {
         Row: {
           abbrev: string
+          audio_folder: string | null
           chapters_count: number
           created_at: string | null
           has_audio: boolean | null
@@ -65,6 +66,7 @@ export type Database = {
         }
         Insert: {
           abbrev: string
+          audio_folder?: string | null
           chapters_count: number
           created_at?: string | null
           has_audio?: boolean | null
@@ -75,6 +77,7 @@ export type Database = {
         }
         Update: {
           abbrev?: string
+          audio_folder?: string | null
           chapters_count?: number
           created_at?: string | null
           has_audio?: boolean | null
