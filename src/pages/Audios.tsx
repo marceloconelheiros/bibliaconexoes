@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Slider } from "@/components/ui/slider";
-import { ArrowLeft, Volume2, Play, Pause, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, Play, Pause, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import {
   audiosBuiltInPlaybackConfigured,
@@ -610,49 +610,51 @@ const Audios = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/10">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-              <ArrowLeft className="w-5 h-5" />
+    <div className="min-h-screen bg-background">
+      <div className="sticky top-0 z-20 border-b border-border/70 bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/75">
+        <div className="container mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 shrink-0 gap-1.5 rounded-md px-2 text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+              onClick={() => navigate("/")}
+            >
+              <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+              <span className="text-xs font-medium">Voltar</span>
             </Button>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center">
-                <Volume2 className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">Bíblia em Áudio</h1>
-                <p className="text-sm text-muted-foreground">
-                  {
-                    audioTracks.filter((t) => {
-                      const b = books.get(t.book_id);
-                      if (!b) return false;
-                      const dbN = chapterDbByTrack.get(t.id)?.size ?? 0;
-                      if (supportsChapterBoard(b, t)) {
-                        return (
-                          dbN > 0 ||
-                          !!getAudiosChapterRootDirectoryPath(t, b) ||
-                          audiosBuiltInPlaybackConfigured(t, b)
-                        );
-                      }
-                      return dbN > 0 || audiosBuiltInPlaybackConfigured(t, b);
-                    }).length
-                  }{" "}
-                  de {audioTracks.length} faixas com áudio configurado
-                </p>
-              </div>
+            <div className="hidden h-7 w-px shrink-0 bg-border/80 sm:block" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-base font-semibold tracking-tight text-foreground sm:text-lg">Bíblia em Áudio</h1>
+              <p className="truncate text-[11px] text-muted-foreground sm:text-xs">
+                {
+                  audioTracks.filter((t) => {
+                    const b = books.get(t.book_id);
+                    if (!b) return false;
+                    const dbN = chapterDbByTrack.get(t.id)?.size ?? 0;
+                    if (supportsChapterBoard(b, t)) {
+                      return (
+                        dbN > 0 ||
+                        !!getAudiosChapterRootDirectoryPath(t, b) ||
+                        audiosBuiltInPlaybackConfigured(t, b)
+                      );
+                    }
+                    return dbN > 0 || audiosBuiltInPlaybackConfigured(t, b);
+                  }).length
+                }{" "}
+                de {audioTracks.length} faixas com áudio configurado
+              </p>
             </div>
           </div>
-          <ThemeToggle />
+          <ThemeToggle className="h-9 w-9 shrink-0 rounded-md border border-border bg-card shadow-sm" />
         </div>
+      </div>
 
-        <div className="space-y-4">
+      <div className="container mx-auto max-w-4xl px-4 py-6 md:py-8">
           {audioTracks.length === 0 ? (
             <Card>
-              <CardContent className="py-12 space-y-4 text-center px-4">
-                <Volume2 className="w-12 h-12 mx-auto text-muted-foreground" />
-                <p className="text-muted-foreground font-medium">Nenhuma faixa listada</p>
+              <CardContent className="space-y-3 px-4 py-10 text-center sm:px-6">
+                <p className="font-medium text-muted-foreground">Nenhuma faixa listada</p>
                 <p className="text-sm text-muted-foreground max-w-lg mx-auto leading-relaxed">
                   Usa{" "}
                   <code className="text-xs">audio_track_chapter_sources</code>{" "}
@@ -866,7 +868,6 @@ const Audios = () => {
               ))}
             </div>
           )}
-        </div>
       </div>
     </div>
   );
