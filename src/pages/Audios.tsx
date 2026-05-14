@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,7 @@ interface Book {
   abbrev: string;
   testament: string;
   order_index: number;
+  chapters_count: number;
   audio_folder?: string | null;
 }
 
@@ -448,6 +449,21 @@ const Audios = () => {
     }
   };
 
+  const uniqueBookCount = (tracks: AudioTrack[]) => new Set(tracks.map((t) => t.book_id)).size;
+
+  const testamentSections = useMemo(() => {
+    const isOt = (t: AudioTrack) => (books.get(t.book_id)?.testament ?? "").toUpperCase() === "OT";
+    const isNt = (t: AudioTrack) => (books.get(t.book_id)?.testament ?? "").toUpperCase() === "NT";
+    const ot = audioTracks.filter(isOt);
+    const nt = audioTracks.filter(isNt);
+    const other = audioTracks.filter((t) => !isOt(t) && !isNt(t));
+    return [
+      { id: "ot" as const, heading: "Antigo Testamento", tracks: ot },
+      { id: "nt" as const, heading: "Novo Testamento", tracks: nt },
+      ...(other.length ? [{ id: "other" as const, heading: "Outros", tracks: other }] : []),
+    ].filter((section) => section.tracks.length > 0);
+  }, [audioTracks, books]);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -501,7 +517,17 @@ const Audios = () => {
               </CardContent>
             </Card>
           ) : (
-            audioTracks.map((track) => {
+            <div className="space-y-10">
+              {testamentSections.map((section) => (
+                <section key={section.id} className="space-y-4">
+                  <div className="border-b border-border/60 pb-2">
+                    <h2 className="text-lg font-semibold tracking-tight">{section.heading}</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {uniqueBookCount(section.tracks)} livro{uniqueBookCount(section.tracks) !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <div className="space-y-4">
+                    {section.tracks.map((track) => {
               const book = books.get(track.book_id);
               const isExpanded = expandedTrackId === track.id;
               const chapterRoot = book ? getAudiosChapterRootDirectoryPath(track, book) : null;
@@ -545,7 +571,12 @@ const Audios = () => {
                           onClick={() => chapterRoot && book && void toggleExpandTrack(track, book)}
                           disabled={!chapterRoot || !book}
                         >
-                          <div className="text-lg">{book?.name || track.title}</div>
+                          <div className="text-lg">
+                            <span>{book?.name || track.title}</span>
+                            {book != null && book.chapters_count > 0 ? (
+                              <span className="text-muted-foreground font-normal"> ({book.chapters_count} cap.)</span>
+                            ) : null}
+                          </div>
                           {track.psalms_group !== "NONE" && (
                             <div className="text-sm font-normal text-muted-foreground">{track.title}</div>
                           )}
@@ -665,7 +696,11 @@ const Audios = () => {
                   )}
                 </Card>
               );
-            })
+                    })}
+                  </div>
+                </section>
+              ))}
+            </div>
           )}
         </div>
       </div>
