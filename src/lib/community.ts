@@ -17,6 +17,12 @@ export type FeedAuthor = {
   avatar_url: string | null;
 };
 
+export type FeedPostCommunity = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
 export type FeedPost = {
   id: string;
   body: string;
@@ -25,7 +31,12 @@ export type FeedPost = {
   community_id: string;
   author_id: string;
   author: FeedAuthor | null;
+  community?: FeedPostCommunity | null;
 };
+
+/** Texto do feed quando a aba ativa é a casa (Geral). */
+export const GERAL_FEED_HINT =
+  "Publicações públicas de todos os grupos em que participas — ordem cronológica.";
 
 export const PRIVACY_OPTIONS: { value: PostPrivacy; label: string; hint: string }[] = [
   {

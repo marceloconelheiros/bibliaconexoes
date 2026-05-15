@@ -30,6 +30,7 @@ import {
   formatPostTime,
   PRIVACY_OPTIONS,
   privacyLabel,
+  GERAL_FEED_HINT,
   type Community,
   type FeedAuthor,
   type FeedPost,
@@ -78,18 +79,23 @@ const Comunidade = () => {
     setMemberIds(new Set((data ?? []).map((r) => r.community_id)));
   }, [userId]);
 
-  const loadFeed = useCallback(async (communityId: string) => {
-    const { data, error } = await supabase
-      .from("posts")
-      .select(
-        `
-          id, body, privacy, created_at, community_id, author_id,
-          author:profiles!posts_author_id_fkey ( id, nome, avatar_url )
-        `,
-      )
-      .eq("community_id", communityId)
-      .order("created_at", { ascending: false })
-      .limit(40);
+  const postSelect = `
+    id, body, privacy, created_at, community_id, author_id,
+    author:profiles!posts_author_id_fkey ( id, nome, avatar_url ),
+    community:communities!posts_community_id_fkey ( id, name, slug )
+  `;
+
+  const loadFeed = useCallback(async (community: Community, memberCommunityIds: string[]) => {
+    let query = supabase.from("posts").select(postSelect);
+
+    if (community.is_default) {
+      const scopeIds = memberCommunityIds.length > 0 ? memberCommunityIds : [community.id];
+      query = query.eq("privacy", "public").in("community_id", scopeIds);
+    } else {
+      query = query.eq("community_id", community.id);
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: false }).limit(50);
     if (error) throw error;
     setPosts((data ?? []) as unknown as FeedPost[]);
   }, []);
@@ -168,13 +174,15 @@ const Comunidade = () => {
     })();
   }, [refreshAll, toast]);
 
+  const memberIdList = useMemo(() => [...memberIds], [memberIds]);
+
   useEffect(() => {
     if (!activeCommunity?.id) return;
-    void loadFeed(activeCommunity.id).catch((e) => {
+    void loadFeed(activeCommunity, memberIdList).catch((e) => {
       console.error(e);
       toast({ title: "Erro ao carregar publicações", variant: "destructive" });
     });
-  }, [activeCommunity?.id, loadFeed, toast]);
+  }, [activeCommunity, memberIdList, loadFeed, toast]);
 
   const selectCommunity = (slug: string) => {
     if (slug === defaultCommunity?.slug) {
@@ -185,9 +193,22 @@ const Comunidade = () => {
   };
 
   const ensureMember = async (communityId: string) => {
-    if (!userId || memberIds.has(communityId)) return;
-    const { error } = await supabase.from("community_members").insert({ community_id: communityId, user_id: userId });
-    if (error) throw error;
+    if (!userId) return;
+    if (memberIds.has(communityId)) return;
+
+    const { error } = await supabase.from("community_members").upsert(
+      { community_id: communityId, user_id: userId },
+      { onConflict: "community_id,user_id", ignoreDuplicates: true },
+    );
+
+    if (error) {
+      const pg = error as { code?: string };
+      if (pg.code === "23505") {
+        setMemberIds((prev) => new Set(prev).add(communityId));
+        return;
+      }
+      throw error;
+    }
     setMemberIds((prev) => new Set(prev).add(communityId));
   };
 
@@ -238,7 +259,9 @@ const Comunidade = () => {
       setPostBody("");
       setComposeOpen(false);
       toast({ title: "Publicado" });
-      await loadFeed(activeCommunity.id);
+      const feedMemberIds = new Set(memberIds);
+      feedMemberIds.add(activeCommunity.id);
+      await loadFeed(activeCommunity, [...feedMemberIds]);
     } catch (e) {
       console.error(e);
       toast({ title: "Não foi possível publicar", variant: "destructive" });
@@ -248,6 +271,7 @@ const Comunidade = () => {
   };
 
   const subCommunities = communities.filter((c) => !c.is_default);
+  const isGeralView = !!activeCommunity?.is_default;
 
   if (loading) {
     return (
@@ -345,8 +369,12 @@ const Comunidade = () => {
               );
             })}
           </div>
-          {activeCommunity?.description && (
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{activeCommunity.description}</p>
+          {isGeralView ? (
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{GERAL_FEED_HINT}</p>
+          ) : (
+            activeCommunity?.description && (
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{activeCommunity.description}</p>
+            )
           )}
         </section>
 
@@ -390,6 +418,12 @@ const Comunidade = () => {
                 <p className="text-xs text-muted-foreground">
                   {PRIVACY_OPTIONS.find((o) => o.value === postPrivacy)?.hint}
                 </p>
+                {isGeralView && (
+                  <p className="text-xs text-muted-foreground">
+                    No feed <strong>Geral</strong> aparecem só publicações com visibilidade{" "}
+                    <strong>Público</strong> dos grupos em que participas.
+                  </p>
+                )}
               </div>
               <Button className="w-full" disabled={submitting} onClick={() => void handlePublish()}>
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Publicar"}
@@ -399,7 +433,9 @@ const Comunidade = () => {
         </Dialog>
 
         <section aria-label="Publicações" className="space-y-3 pb-8">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mais recentes</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {isGeralView ? "Públicos dos seus grupos" : "Mais recentes"}
+          </h2>
           {posts.length === 0 ? (
             <Card>
               <CardContent className="py-10 text-center text-sm text-muted-foreground">
@@ -420,7 +456,10 @@ const Comunidade = () => {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold leading-tight">{post.author?.nome ?? "Membro"}</p>
                       <p className="text-[11px] text-muted-foreground">
-                        {formatPostTime(post.created_at)} · {privacyLabel(post.privacy)}
+                        {formatPostTime(post.created_at)}
+                        {isGeralView && post.community?.name ? ` · ${post.community.name}` : ""}
+                        {" · "}
+                        {privacyLabel(post.privacy)}
                       </p>
                     </div>
                   </div>
