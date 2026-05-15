@@ -97,6 +97,53 @@ CREATE TRIGGER posts_set_updated_at
   BEFORE UPDATE ON public.posts
   FOR EACH ROW EXECUTE FUNCTION public.set_posts_updated_at();
 
+-- Funções SECURITY DEFINER evitam recursão 42P17 nas políticas RLS.
+CREATE OR REPLACE FUNCTION public.user_is_member_of(p_community_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  ok boolean;
+BEGIN
+  PERFORM set_config('row_security', 'off', true);
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.community_members
+    WHERE user_id = auth.uid()
+      AND community_id = p_community_id
+  ) INTO ok;
+  RETURN COALESCE(ok, false);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.user_has_any_community()
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  ok boolean;
+BEGIN
+  PERFORM set_config('row_security', 'off', true);
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.community_members
+    WHERE user_id = auth.uid()
+  ) INTO ok;
+  RETURN COALESCE(ok, false);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.user_is_member_of(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.user_has_any_community() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.user_is_member_of(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.user_has_any_community() TO authenticated;
+
 ALTER TABLE public.communities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.community_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.follows ENABLE ROW LEVEL SECURITY;
@@ -112,12 +159,7 @@ CREATE POLICY communities_select_authenticated
 DROP POLICY IF EXISTS community_members_select ON public.community_members;
 CREATE POLICY community_members_select
   ON public.community_members FOR SELECT TO authenticated
-  USING (
-    user_id = auth.uid()
-    OR community_id IN (
-      SELECT cm.community_id FROM public.community_members cm WHERE cm.user_id = auth.uid()
-    )
-  );
+  USING (true);
 
 DROP POLICY IF EXISTS community_members_insert_own ON public.community_members;
 CREATE POLICY community_members_insert_own
@@ -151,17 +193,8 @@ CREATE POLICY posts_select_visible
   ON public.posts FOR SELECT TO authenticated
   USING (
     author_id = auth.uid()
-    OR (
-      privacy = 'public'
-      AND EXISTS (SELECT 1 FROM public.community_members cm WHERE cm.user_id = auth.uid())
-    )
-    OR (
-      privacy = 'community'
-      AND EXISTS (
-        SELECT 1 FROM public.community_members cm
-        WHERE cm.user_id = auth.uid() AND cm.community_id = posts.community_id
-      )
-    )
+    OR (privacy = 'public' AND public.user_has_any_community())
+    OR (privacy = 'community' AND public.user_is_member_of(community_id))
     OR (
       privacy = 'followers'
       AND EXISTS (
@@ -176,10 +209,7 @@ CREATE POLICY posts_insert_own
   ON public.posts FOR INSERT TO authenticated
   WITH CHECK (
     author_id = auth.uid()
-    AND EXISTS (
-      SELECT 1 FROM public.community_members cm
-      WHERE cm.user_id = auth.uid() AND cm.community_id = posts.community_id
-    )
+    AND public.user_is_member_of(community_id)
   );
 
 DROP POLICY IF EXISTS posts_update_own ON public.posts;

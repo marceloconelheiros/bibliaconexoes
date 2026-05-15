@@ -16,6 +16,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -388,6 +389,9 @@ const Comunidade = () => {
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Publicar em {activeCommunity?.name}</DialogTitle>
+              <DialogDescription className="sr-only">
+                Escreva o texto e escolha quem pode ver a publicação.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
