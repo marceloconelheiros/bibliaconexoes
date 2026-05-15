@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { ArrowLeft, BookOpen, BriefcaseBusiness, ChevronRight, Lightbulb } from "lucide-react";
+import { ArrowLeft, BookText, ChevronRight, Compass, ScrollText, Sparkles } from "lucide-react";
 import bibleData from "@/data/bible.json";
 import { bookNames } from "@/data/bookNames";
 import { getExecutiveStudy } from "@/data/executiveStudies";
@@ -75,7 +75,7 @@ const BibliaOnline = () => {
     <div className="min-h-screen bg-gradient-to-b from-slate-950/[0.03] via-background to-background dark:from-slate-950/40">
       <div className="border-b border-border/60 bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-3 max-w-4xl flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <BriefcaseBusiness className="h-3.5 w-3.5 shrink-0 text-primary" />
+          <Compass className="h-3.5 w-3.5 shrink-0 text-primary" strokeWidth={1.75} />
           <span>
             Conteúdo da experiência <strong className="text-foreground">{BRAND.name}</strong> para quem lidera
             negócios, equipes e decisões — texto bíblico completo com reflexões onde há estudo empresarial.
@@ -90,8 +90,8 @@ const BibliaOnline = () => {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-slate-900 flex items-center justify-center shrink-0 shadow-md">
-                <BookOpen className="w-6 h-6 text-primary-foreground" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-slate-900 shadow-md ring-1 ring-white/10">
+                <BookText className="h-6 w-6 text-primary-foreground" strokeWidth={1.75} />
               </div>
               <div className="min-w-0">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold">
@@ -163,7 +163,7 @@ const BibliaOnline = () => {
               <Card className="border-l-4 border-l-blue-500 bg-blue-500/[0.06] dark:bg-blue-500/[0.09] shadow-sm">
                 <CardHeader className="pb-2 pt-4">
                   <CardTitle className="flex items-start gap-3 text-lg font-display">
-                    <Lightbulb className="h-6 w-6 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                    <Sparkles className="mt-0.5 h-6 w-6 shrink-0 text-blue-600 dark:text-blue-400" strokeWidth={1.75} />
                     <span>
                       <span className="block text-xs font-sans font-normal uppercase tracking-wider text-muted-foreground mb-1">
                         Momento de reflexão · líderes & negócios
@@ -207,8 +207,11 @@ const BibliaOnline = () => {
             )}
 
             <Card className="border-border/80 shadow-sm overflow-hidden">
-              <CardHeader className="pb-2 border-b border-border/60 bg-muted/30">
-                <CardTitle className="font-display text-lg">Texto — capítulo {(selectedChapter ?? 0) + 1}</CardTitle>
+                <CardHeader className="border-b border-border/60 bg-muted/30 pb-2">
+                <CardTitle className="flex items-center gap-2 font-display text-lg">
+                  <ScrollText className="h-5 w-5 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+                  Texto — capítulo {(selectedChapter ?? 0) + 1}
+                </CardTitle>
               </CardHeader>
               <CardContent className="pt-4 pb-6">
                 <ScrollArea className="h-[min(62vh,520px)] md:h-[min(68vh,600px)]">

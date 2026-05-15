@@ -201,14 +201,15 @@ const Login = () => {
             <img
               src="/logo.png"
               alt={BRAND.name}
-              className="h-12 w-12 shrink-0 rounded-md object-cover shadow-sm ring-1 ring-slate-200/80 dark:ring-slate-700"
+              className="h-14 w-14 shrink-0 rounded-lg object-cover shadow-sm ring-1 ring-slate-200/80 dark:ring-slate-700"
             />
             <div className="text-center sm:text-left">
               <CardTitle className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
                 {BRAND.name}
               </CardTitle>
-              <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                {BRAND.tagline}
+              <p className="mt-1 text-[10px] font-medium uppercase leading-snug tracking-[0.12em] text-slate-500 dark:text-slate-400 sm:text-[11px] sm:tracking-[0.14em]">
+                <span className="block">{BRAND.taglineLead}</span>
+                <span className="block text-slate-500/90 dark:text-slate-400/90">{BRAND.taglineRest}</span>
               </p>
             </div>
           </div>

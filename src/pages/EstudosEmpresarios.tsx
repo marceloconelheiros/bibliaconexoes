@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { ArrowLeft, BriefcaseBusiness, BookOpen } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, BookMarked, Presentation } from "lucide-react";
 import { EXECUTIVE_STUDIES } from "@/data/executiveStudies";
 import { bookNames } from "@/data/bookNames";
 import { BRAND } from "@/lib/brand";
@@ -20,8 +20,8 @@ const EstudosEmpresarios = () => {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-lg bg-primary/15 flex items-center justify-center">
-                <BriefcaseBusiness className="w-6 h-6 text-primary" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-slate-900 shadow-md ring-1 ring-white/10 dark:ring-white/5">
+                <Presentation className="h-6 w-6 text-primary-foreground" strokeWidth={1.75} />
               </div>
               <div>
                 <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold">
@@ -46,7 +46,7 @@ const EstudosEmpresarios = () => {
                 <CardHeader className="pb-2">
                   <CardTitle className="font-display text-lg leading-snug">{study.title}</CardTitle>
                   <CardDescription className="flex items-center gap-2 font-medium text-primary">
-                    <BookOpen className="h-4 w-4" />
+                    <BookMarked className="h-4 w-4" strokeWidth={1.75} />
                     {bookNames[study.bookAbbrev] || study.bookAbbrev} · Capítulo {study.chapter}
                   </CardDescription>
                 </CardHeader>
@@ -69,6 +69,7 @@ const EstudosEmpresarios = () => {
                     }}
                   >
                     Abrir na Bíblia
+                    <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={1.75} />
                   </Button>
                 </CardContent>
               </Card>

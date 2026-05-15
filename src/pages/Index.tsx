@@ -4,12 +4,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
-  BookOpen,
+  BookText,
   Volume2,
   Sparkles,
   CalendarCheck,
   Download,
-  BriefcaseBusiness,
+  Presentation,
   User,
   ChevronRight,
   Search,
@@ -47,14 +47,14 @@ const HUB_ITEMS: HubItem[] = [
     path: "/audios",
   },
   {
-    icon: BookOpen,
+    icon: BookText,
     title: "Bíblia",
     category: "Leitura",
     description: "Texto e reflexões.",
     path: "/biblia",
   },
   {
-    icon: BriefcaseBusiness,
+    icon: Presentation,
     title: "Estudos",
     category: "Formação",
     description: "Lentes de gestão.",
@@ -144,14 +144,17 @@ const Index = () => {
     <div className="min-h-screen bg-[#f4f5f7] font-sans text-slate-900 antialiased dark:bg-[#0c0e12] dark:text-slate-100">
       {/* Cabeçalho premium — barra fixa, tipografia sóbria */}
       <header className="sticky top-0 z-30 border-b border-slate-200/90 bg-white/85 backdrop-blur-md dark:border-slate-800/90 dark:bg-[#0c0e12]/85">
-        <div className="mx-auto flex h-[52px] max-w-3xl items-center justify-between gap-3 px-4 md:h-14 md:px-5">
-          <button type="button" onClick={() => navigate("/")} className="group flex min-w-0 items-center gap-2.5 text-left">
-            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-100 ring-1 ring-slate-200/80 dark:bg-slate-800 dark:ring-slate-700">
-              <img src="/logo.png" alt="" className="h-7 w-7 object-contain opacity-95" />
+        <div className="mx-auto flex min-h-[56px] max-w-3xl items-center justify-between gap-3 px-4 py-2 md:min-h-[60px] md:px-5">
+          <button type="button" onClick={() => navigate("/")} className="group flex min-w-0 items-center gap-3 text-left">
+            <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-100 ring-1 ring-slate-200/80 dark:bg-slate-800 dark:ring-slate-700">
+              <img src="/logo.png" alt="" className="h-9 w-9 object-contain opacity-95" />
             </span>
             <span className="min-w-0">
-              <span className="block truncate text-[13px] font-semibold leading-none tracking-tight text-slate-900 dark:text-slate-50">{BRAND.name}</span>
-              <span className="mt-0.5 block truncate text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{BRAND.tagline}</span>
+              <span className="block text-[13px] font-semibold leading-none tracking-tight text-slate-900 dark:text-slate-50">{BRAND.name}</span>
+              <span className="mt-1 block text-[9px] font-medium uppercase leading-snug tracking-[0.12em] text-slate-500 dark:text-slate-400 sm:text-[10px] sm:tracking-[0.14em]">
+                <span className="block">{BRAND.taglineLead}</span>
+                <span className="block text-slate-500/90 dark:text-slate-400/90">{BRAND.taglineRest}</span>
+              </span>
             </span>
           </button>
 
@@ -272,16 +275,32 @@ const Index = () => {
           </div>
         </section>
 
-        <footer className="flex flex-col items-stretch justify-between gap-3 border-t border-slate-200 pt-6 dark:border-slate-800 sm:flex-row sm:items-center">
-          <p className="text-center text-[10px] leading-relaxed text-slate-400 dark:text-slate-500 sm:text-left">Métricas locais: planos, áudio e estudos.</p>
-          <button
-            type="button"
-            onClick={() => void handleInstall()}
-            className="inline-flex items-center justify-center gap-1.5 self-center rounded-md border border-transparent py-1.5 text-[10px] font-medium text-slate-400 transition-colors hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300 sm:self-auto"
-          >
-            <Download className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
-            Instalar no celular
-          </button>
+        <footer className="border-t border-slate-200 pt-4 dark:border-slate-800">
+          <div className="flex flex-nowrap items-center gap-x-2 overflow-x-auto pb-0.5 text-[9px] text-slate-400 [-ms-overflow-style:none] [scrollbar-width:none] dark:text-slate-500 sm:gap-x-2.5 sm:text-[10px] [&::-webkit-scrollbar]:hidden">
+            <span className="shrink-0 whitespace-nowrap">Métricas locais: planos, áudio e estudos.</span>
+            <span className="shrink-0 text-slate-300 dark:text-slate-600" aria-hidden>
+              ·
+            </span>
+            <button
+              type="button"
+              onClick={() => void handleInstall()}
+              className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap font-medium text-slate-400 transition-colors hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300"
+            >
+              <Download className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
+              Instalar no celular
+            </button>
+            <span className="shrink-0 text-slate-300 dark:text-slate-600" aria-hidden>
+              ·
+            </span>
+            <a
+              href="https://wa.me/5514991570389"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 whitespace-nowrap font-medium text-slate-400 underline-offset-2 transition-colors hover:text-slate-700 hover:underline dark:text-slate-500 dark:hover:text-slate-300"
+            >
+              suporte: 14-99157-0389 whats
+            </a>
+          </div>
         </footer>
       </div>
     </div>
