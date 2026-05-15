@@ -47,8 +47,7 @@ INSERT INTO public.communities (slug, name, description, is_default, sort_order)
   ('geral', 'Geral', 'Toda a casa Bíblia Conexões — o ponto de encontro principal.', true, 0),
   ('lideres', 'Líderes e empresários', 'Gestão, ética e decisão com base na Palavra.', false, 10),
   ('jovens', 'Jovens na fé', 'Crescimento e comunhão para quem está começando ou retomando.', false, 20),
-  ('casais', 'Casais', 'Vida a dois com propósito e alinhamento espiritual.', false, 30),
-  ('oracao', 'Oração e intercessão', 'Pedidos, gratidão e apoio mútuo em oração.', false, 40)
+  ('oracao', 'Oração e intercessão', 'Pedidos, gratidão e apoio mútuo em oração.', false, 30)
 ON CONFLICT (slug) DO NOTHING;
 
 -- Entrada automática na comunidade Geral
