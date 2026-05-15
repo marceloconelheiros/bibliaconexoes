@@ -13,6 +13,7 @@ import {
   User,
   ChevronRight,
   Search,
+  Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +32,13 @@ type HubItem = {
 };
 
 const HUB_ITEMS: HubItem[] = [
+  {
+    icon: Users,
+    title: "Comunidade",
+    category: "Casa",
+    description: "Geral + grupos · feed cronológico.",
+    path: "/comunidade",
+  },
   {
     icon: Volume2,
     title: "Áudio",

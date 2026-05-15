@@ -120,6 +120,147 @@ export type Database = {
         }
         Relationships: []
       }
+      communities: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_default: boolean
+          name: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      community_members: {
+        Row: {
+          community_id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_following_id_fkey"
+            columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          author_id: string
+          body: string
+          community_id: string
+          created_at: string
+          id: string
+          privacy: Database["public"]["Enums"]["post_privacy"]
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          community_id: string
+          created_at?: string
+          id?: string
+          privacy?: Database["public"]["Enums"]["post_privacy"]
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          community_id?: string
+          created_at?: string
+          id?: string
+          privacy?: Database["public"]["Enums"]["post_privacy"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapters: {
         Row: {
           book_id: string
@@ -396,6 +537,7 @@ export type Database = {
         | "COMFY_180"
         | "CLASSIC_365"
       plan_style: "SEQUENTIAL" | "MIX_ON" | "TRIAD"
+      post_privacy: "public" | "community" | "followers"
       psalms_group: "NONE" | "PS1" | "PS2" | "PS3" | "PS4" | "PS5"
       testament_type: "OT" | "NT"
     }
@@ -533,6 +675,7 @@ export const Constants = {
         "CLASSIC_365",
       ],
       plan_style: ["SEQUENTIAL", "MIX_ON", "TRIAD"],
+      post_privacy: ["public", "community", "followers"],
       psalms_group: ["NONE", "PS1", "PS2", "PS3", "PS4", "PS5"],
       testament_type: ["OT", "NT"],
     },

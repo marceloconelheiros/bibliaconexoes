@@ -11,6 +11,7 @@ import InstalarApp from "./pages/InstalarApp";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Perfil from "./pages/Perfil";
+import Comunidade from "./pages/Comunidade";
 
 const AppRoutes = () => {
   const { isLoggedIn, loading } = useAuth();
@@ -31,6 +32,7 @@ const AppRoutes = () => {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Index />} />
+        <Route path="/comunidade" element={<Comunidade />} />
         <Route path="/planos" element={<Planos />} />
         <Route path="/meus-planos" element={<MeusPlanos />} />
         <Route path="/plano/:id" element={<PlanoDetalhes />} />
